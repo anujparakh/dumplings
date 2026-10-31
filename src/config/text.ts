@@ -32,6 +32,7 @@ export const text = {
   drawer: {
     expand: 'Show more spots',
     collapse: 'Show fewer spots',
+    count: (n: number): string => `${n} ${n === 1 ? 'spot' : 'spots'}`,
   },
   empty: {
     noSpots: 'No spots yet.',

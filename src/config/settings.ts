@@ -10,7 +10,9 @@ export const settings = {
   // When fitting the map to spots: never zoom in past this, and keep pins clear of the
   // floating header (top) and the spot drawer (bottom). Values are pixels.
   mapFitMaxZoom: 14,
-  mapFitPadding: { top: 140, bottom: 260, left: 40, right: 40 },
+  mapFitPadding: { top: 140, bottom: 120, left: 72, right: 72 },
+  // Name labels under the pins hide when zoomed out further than this, so a city-wide view stays tidy.
+  pinLabelMinZoom: 8,
   photoMaxEdge: 1600,
   photoQuality: 0.82,
   photoMaxBytes: 5_000_000,

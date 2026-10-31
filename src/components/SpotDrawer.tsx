@@ -49,7 +49,7 @@ export function SpotDrawer({ spots, userLocation, emptyMessage, action }: Props)
   return (
     <section
       className={`absolute inset-x-0 bottom-0 z-10 flex flex-col rounded-t-2xl bg-surface shadow-sheet transition-[height] duration-300 ${
-        expanded ? 'h-[75dvh]' : 'h-60'
+        expanded ? 'h-[75dvh]' : 'h-16'
       }`}
     >
       {action && <div className="absolute -top-16 right-4">{action}</div>}
@@ -57,7 +57,7 @@ export function SpotDrawer({ spots, userLocation, emptyMessage, action }: Props)
         type="button"
         aria-label={expanded ? text.drawer.collapse : text.drawer.expand}
         aria-expanded={expanded}
-        className="flex w-full touch-none justify-center py-3"
+        className="flex w-full shrink-0 touch-none flex-col items-center gap-1.5 pt-3 pb-2"
         onPointerDown={(e) => {
           dragStart.current = e.clientY;
           dragged.current = false;
@@ -70,8 +70,9 @@ export function SpotDrawer({ spots, userLocation, emptyMessage, action }: Props)
         onClick={onClick}
       >
         <span className="h-1 w-9 rounded-full bg-ink-muted opacity-40" />
+        {spots.length > 0 && <span className="text-sm font-semibold text-ink-muted">{text.drawer.count(spots.length)}</span>}
       </button>
-      <div className="flex-1 overflow-y-auto px-3 pb-3">
+      <div className={`flex-1 overflow-y-auto px-3 pb-3 ${expanded ? '' : 'invisible'}`}>
         {rows.length === 0 ? (
           emptyMessage && <EmptyState message={emptyMessage} />
         ) : (

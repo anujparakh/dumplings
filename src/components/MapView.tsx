@@ -30,12 +30,21 @@ function pinElement(src: string, label?: string): HTMLElement {
     el.setAttribute('type', 'button');
     el.setAttribute('aria-label', label);
   }
-  el.className = 'block h-10 w-8 cursor-pointer';
+  el.className = 'relative block h-10 w-8 cursor-pointer';
   const img = document.createElement('img');
   img.src = src;
   img.alt = '';
   img.className = 'h-full w-full';
   el.appendChild(img);
+  if (label) {
+    // The name hangs below the pin, outside its box, so the pin tip stays on the spot.
+    const name = document.createElement('span');
+    name.setAttribute('aria-hidden', 'true');
+    name.textContent = label;
+    name.className =
+      'absolute left-1/2 top-full mt-0.5 max-w-32 -translate-x-1/2 truncate whitespace-nowrap rounded-full bg-surface/90 px-2 py-0.5 text-xs font-semibold text-ink shadow-sm group-data-[labels=off]:hidden';
+    el.appendChild(name);
+  }
   return el;
 }
 
@@ -58,7 +67,14 @@ export default function MapView({ spots, onSelect, onMapTap, marker, center, zoo
       attributionControl: { compact: true },
     });
     m.on('click', (e) => handlers.current.onMapTap?.({ lat: e.lngLat.lat, lng: e.lngLat.lng }));
+    const showLabels = (): void => {
+      container.current!.dataset.labels = m.getZoom() >= settings.pinLabelMinZoom ? 'on' : 'off';
+    };
+    showLabels();
+    m.on('zoom', showLabels);
     map.current = m;
+    // A new map has not been fitted yet (React's dev mode builds the map twice).
+    fittedFor.current = null;
     return () => {
       m.remove();
       map.current = null;
@@ -100,5 +116,5 @@ export default function MapView({ spots, onSelect, onMapTap, marker, center, zoo
     };
   }, [lat, lng]);
 
-  return <div ref={container} className="h-full w-full" />;
+  return <div ref={container} className="group h-full w-full" />;
 }
