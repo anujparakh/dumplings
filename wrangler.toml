@@ -14,5 +14,5 @@ binding = "PHOTOS"
 bucket_name = "dumplings-photos"
 
 [vars]
-SEARCH_PROVIDER = "photon"
+SEARCH_PROVIDER = "google"
 # EDITOR_PASSWORD is a secret, not a var: npx wrangler pages secret put EDITOR_PASSWORD

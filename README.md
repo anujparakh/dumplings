@@ -123,6 +123,25 @@ When a new file appears in `migrations/`, apply it before (or right after) deplo
 npx wrangler d1 migrations apply dumplings --remote
 ```
 
+## Auto-deploy from GitHub
+
+`.github/workflows/deploy.yml` runs on every push to `main`. It runs the tests, builds, applies new migrations, and deploys, which is the same as the manual steps above. If the tests fail, nothing is deployed. You can also start it by hand from the repo's Actions tab ("Deploy" > "Run workflow").
+
+One-time setup:
+
+1. Create an API token: Cloudflare dashboard > My Profile > API Tokens > Create Token > Create Custom Token. Add these permissions:
+   - Account > Cloudflare Pages > Edit
+   - Account > D1 > Edit
+
+   Under Account Resources, pick your account. Create it and copy the token (it is shown only once).
+2. Find your account ID: Cloudflare dashboard > Workers & Pages. It is in the right sidebar (or run `npx wrangler whoami`).
+3. In GitHub: repo > Settings > Secrets and variables > Actions > New repository secret. Add:
+   - `CLOUDFLARE_API_TOKEN`: the token from step 1
+   - `CLOUDFLARE_ACCOUNT_ID`: the ID from step 2
+4. Push to `main` (or run the workflow by hand) and watch the Actions tab.
+
+`EDITOR_PASSWORD` stays a Cloudflare secret, so the workflow never needs or changes it. The manual commands above still work if you ever need to deploy from your machine.
+
 ## Smoke test after deploying
 
 1. In a private/incognito window, browse the site: the map and spots load and there is no "+" button.
