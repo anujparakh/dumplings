@@ -1,9 +1,9 @@
 // App-wide settings. Components import from this file instead of using magic values.
 export const settings = {
+  // Changing ratingMax also needs a migration: the DB has CHECK (rating BETWEEN 1 AND 5).
   ratingMax: 5,
   defaultCenter: { lat: 29.7604, lng: -95.3698 }, // Houston
   defaultZoom: 11,
-  distanceUnit: 'mi',
   defaultTags: ['Dumplings', 'Fully veg menu'],
   newSpotTags: ['Dumplings'],
   mapStyleUrl: 'https://tiles.openfreemap.org/styles/liberty',
@@ -18,6 +18,8 @@ export const settings = {
   searchDebounceMs: 300,
   // Street-level zoom for the "drop a pin" map when it opens at a known place or her location.
   pinZoom: 17,
+  directionsUrl: (lat: number, lng: number): string =>
+    `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`,
   // Indexing is blocked in three places: the <meta name="robots"> tag in index.html,
   // the X-Robots-Tag header in public/_headers, and Disallow in public/robots.txt.
   allowIndexing: false,

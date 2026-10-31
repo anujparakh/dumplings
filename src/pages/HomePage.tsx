@@ -51,6 +51,8 @@ export function HomePage(): JSX.Element {
   const userLocation = useUserLocation();
   const navigate = useNavigate();
   const [all, setAll] = useState<SpotSummary[] | null>(null);
+  // The tag `all` was loaded for. The map refits when this changes, i.e. once the new tag's spots arrive.
+  const [loadedTag, setLoadedTag] = useState('');
   const [failed, setFailed] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
 
@@ -64,6 +66,7 @@ export function HomePage(): JSX.Element {
       (s) => {
         if (!active) return;
         setAll(s);
+        setLoadedTag(q.tag ?? '');
         setFailed(false);
       },
       () => {
@@ -82,7 +85,10 @@ export function HomePage(): JSX.Element {
     [all, q.showBeen, q.showWant],
   );
   // Nothing to say while the first load is in flight.
-  const emptyMessage = all === null ? undefined : failed ? text.errors.loadSpots : text.empty.noSpots;
+  // With a tag picked or a chip off, an empty list means the filters hide everything, not "no spots yet".
+  const filtered = q.tag !== null || !q.showBeen || !q.showWant;
+  const emptyMessage =
+    all === null ? undefined : failed ? text.errors.loadSpots : filtered ? text.empty.noMatches : text.empty.noSpots;
 
   const addButton = email ? (
     <Link
@@ -148,7 +154,7 @@ export function HomePage(): JSX.Element {
     <div className="relative h-dvh overflow-hidden bg-surface-muted">
       <div className="absolute inset-0">
         <Suspense fallback={null}>
-          <MapView spots={spots} onSelect={(id) => navigate(`/spot/${id}`)} />
+          <MapView spots={spots} fitKey={loadedTag} onSelect={(id) => navigate(`/spot/${id}`)} />
         </Suspense>
       </div>
       <div className="absolute inset-x-0 top-0 z-10">{top}</div>

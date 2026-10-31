@@ -4,6 +4,7 @@ import type { Spot } from '../../shared/types';
 import { Header } from '../components/Header';
 import { DumplingRating } from '../components/DumplingRating';
 import { PhotoCarousel } from '../components/PhotoCarousel';
+import { settings } from '../config/settings';
 import { text } from '../config/text';
 import { api } from '../lib/api';
 import { useEditor } from '../lib/useEditor';
@@ -100,7 +101,7 @@ export function SpotPage(): JSX.Element {
           )}
           <div className="flex gap-2 pt-2">
             <a
-              href={`https://www.google.com/maps/dir/?api=1&destination=${spot.lat},${spot.lng}`}
+              href={settings.directionsUrl(spot.lat, spot.lng)}
               target="_blank"
               rel="noreferrer"
               className={BUTTON}

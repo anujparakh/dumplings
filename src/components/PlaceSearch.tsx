@@ -2,8 +2,9 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import type { PlaceResult } from '../../shared/types';
 import { settings } from '../config/settings';
 import { text } from '../config/text';
-import { api } from '../lib/api';
+import { api, isSignedOut } from '../lib/api';
 import type { LatLng } from '../lib/geo';
+import { SignedOutNotice } from './SignedOutNotice';
 
 // Lazy so maplibre (WebGL) only loads in the browser when she opens "drop a pin", never in tests.
 const MapView = lazy(() => import('./MapView'));
@@ -24,7 +25,7 @@ export function PlaceSearch({ name, onNameChange, userLocation, place, onPick, o
   // Only text she types is searched; null after a pick or when loaded from a saved spot.
   const [query, setQuery] = useState<string | null>(null);
   const [results, setResults] = useState<PlaceResult[]>([]);
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<'error' | 'signedOut' | null>(null);
   const [mapOpen, setMapOpen] = useState(false);
   const latest = useRef(0);
   const nearRef = useRef(userLocation ?? settings.defaultCenter);
@@ -39,7 +40,7 @@ export function PlaceSearch({ name, onNameChange, userLocation, place, onPick, o
     const q = query?.trim() ?? '';
     if (q.length < settings.searchMinChars) {
       setResults([]);
-      setFailed(false);
+      setFailed(null);
       return;
     }
     const timer = setTimeout(() => {
@@ -47,12 +48,12 @@ export function PlaceSearch({ name, onNameChange, userLocation, place, onPick, o
         (r) => {
           if (seq !== latest.current) return;
           setResults(r);
-          setFailed(false);
+          setFailed(null);
         },
-        () => {
+        (e: unknown) => {
           if (seq !== latest.current) return;
           setResults([]);
-          setFailed(true);
+          setFailed(isSignedOut(e) ? 'signedOut' : 'error');
         },
       );
     }, settings.searchDebounceMs);
@@ -82,7 +83,8 @@ export function PlaceSearch({ name, onNameChange, userLocation, place, onPick, o
       {place && results.length === 0 && (
         <p className="px-1 text-xs text-ink-muted">{place.address ?? text.form.pinSet}</p>
       )}
-      {failed && <p className="px-1 text-xs text-primary">{text.form.searchFailed}</p>}
+      {failed === 'error' && <p className="px-1 text-xs text-primary">{text.form.searchFailed}</p>}
+      {failed === 'signedOut' && <SignedOutNotice className="px-1" />}
       <div className="overflow-hidden rounded-card border border-surface-muted">
         {results.map((r, i) => (
           <button

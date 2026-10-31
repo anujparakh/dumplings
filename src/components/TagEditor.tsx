@@ -14,7 +14,9 @@ const same = (a: string, b: string): boolean => a.toLowerCase() === b.toLowerCas
 export function TagEditor({ value, onChange, suggestions }: Props): JSX.Element {
   const [draft, setDraft] = useState('');
   const add = (raw: string): void => {
-    const tag = raw.trim().replace(/\s+/g, ' ');
+    const typed = raw.trim().replace(/\s+/g, ' ');
+    // Reuse an existing tag's casing so "dumplings" and "Dumplings" stay one tag.
+    const tag = suggestions.find((s) => same(s, typed)) ?? typed;
     if (tag && !value.some((t) => same(t, tag))) onChange([...value, tag]);
   };
   const offered = suggestions.filter((s, i) => !value.some((t) => same(t, s)) && suggestions.findIndex((o) => same(o, s)) === i);

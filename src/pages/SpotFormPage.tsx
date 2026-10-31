@@ -5,10 +5,11 @@ import { DumplingRating } from '../components/DumplingRating';
 import { Header } from '../components/Header';
 import { PhotoPicker, type PendingPhoto } from '../components/PhotoPicker';
 import { PlaceSearch } from '../components/PlaceSearch';
+import { SignedOutNotice } from '../components/SignedOutNotice';
 import { TagEditor } from '../components/TagEditor';
 import { settings } from '../config/settings';
 import { text } from '../config/text';
-import { api } from '../lib/api';
+import { api, isSignedOut } from '../lib/api';
 import { useUserLocation } from '../lib/useUserLocation';
 
 interface Form {
@@ -74,7 +75,7 @@ export function SpotFormPage(): JSX.Element {
   const userLocation = useUserLocation();
 
   const [form, setForm] = useState<Form>(blankForm);
-  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'notFound' | 'failed'>(id ? 'loading' : 'ready');
+  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'notFound' | 'failed' | 'signedOut'>(id ? 'loading' : 'ready');
   const [tagOptions, setTagOptions] = useState<string[]>([...settings.defaultTags]);
   // Photos already on the server (kept), ones she removed (deleted after save), and new picks.
   const [photos, setPhotos] = useState<Photo[]>([]);
@@ -83,6 +84,8 @@ export function SpotFormPage(): JSX.Element {
   const [resizing, setResizing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Set with error when the failure was an expired sign-in: shows the sign-in link instead.
+  const [signedOut, setSignedOut] = useState(false);
   const [canRetry, setCanRetry] = useState(false);
   // The id of the spot this form just saved, so moving from /admin/new to its edit URL does not reload it.
   const savedId = useRef<string | null>(null);
@@ -113,7 +116,7 @@ export function SpotFormPage(): JSX.Element {
         setPending([]);
         setLoadState('ready');
       },
-      () => active && setLoadState('failed'),
+      (e: unknown) => active && setLoadState(isSignedOut(e) ? 'signedOut' : 'failed'),
     );
     return () => {
       active = false;
@@ -147,9 +150,9 @@ export function SpotFormPage(): JSX.Element {
   // Upload new photos one at a time, then delete removed ones, then show the spot.
   // On failure the spot is already saved: stay on its edit page and offer a retry.
   const finishPhotos = async (spotId: string, isNew: boolean, uploads: PendingPhoto[], deletes: string[]): Promise<void> => {
-    const fail = (message: string): void => {
+    const fail = (e: unknown, message: string): void => {
       if (isNew) navigate(`/admin/spot/${spotId}/edit`, { replace: true });
-      setError(message);
+      showError(e, message);
       setCanRetry(true);
       setBusy(false);
     };
@@ -159,24 +162,31 @@ export function SpotFormPage(): JSX.Element {
         URL.revokeObjectURL(p.previewUrl);
         setPending((ps) => ps.filter((x) => x.key !== p.key));
         setPhotos((ps) => [...ps, uploaded]);
-      } catch {
-        return fail(text.form.photoUploadFailed);
+      } catch (e) {
+        return fail(e, text.form.photoUploadFailed);
       }
     }
     for (const photoId of deletes) {
       try {
         await api.deletePhoto(photoId);
         setRemoved((ids) => ids.filter((x) => x !== photoId));
-      } catch {
-        return fail(text.form.photoDeleteFailed);
+      } catch (e) {
+        return fail(e, text.form.photoDeleteFailed);
       }
     }
-    navigate(`/spot/${spotId}`);
+    // A new spot replaces /admin/new in history, so Back from the spot page does not reopen a blank form.
+    navigate(`/spot/${spotId}`, { replace: isNew });
+  };
+
+  const showError = (e: unknown, message: string): void => {
+    setSignedOut(isSignedOut(e));
+    setError(message);
   };
 
   const start = (): void => {
     setBusy(true);
     setError(null);
+    setSignedOut(false);
     setCanRetry(false);
   };
 
@@ -185,8 +195,8 @@ export function SpotFormPage(): JSX.Element {
     let saved: Spot;
     try {
       saved = id ? await api.updateSpot(id, toInput()) : await api.createSpot(toInput());
-    } catch {
-      setError(text.form.saveFailed);
+    } catch (e) {
+      showError(e, text.form.saveFailed);
       setBusy(false);
       return;
     }
@@ -205,8 +215,8 @@ export function SpotFormPage(): JSX.Element {
     try {
       await api.deleteSpot(id);
       navigate('/');
-    } catch {
-      setError(text.form.deleteFailed);
+    } catch (e) {
+      showError(e, text.form.deleteFailed);
       setBusy(false);
     }
   };
@@ -214,6 +224,14 @@ export function SpotFormPage(): JSX.Element {
   const setStatus = (status: SpotStatus): void =>
     setForm((f) => ({ ...f, status, visitedOn: status === 'been' && !f.visitedOn ? today() : f.visitedOn }));
 
+  if (loadState === 'signedOut') {
+    return (
+      <div className="min-h-dvh bg-surface">
+        <Header />
+        <SignedOutNotice className="px-4 py-8 text-center" />
+      </div>
+    );
+  }
   if (loadState !== 'ready') {
     const message = { loading: text.form.loading, notFound: text.notFound, failed: text.form.loadFailed }[loadState];
     return (
@@ -315,7 +333,8 @@ export function SpotFormPage(): JSX.Element {
           <TagEditor value={form.tags} onChange={(tags) => set('tags', tags)} suggestions={tagOptions} />
         </Field>
 
-        {error && (
+        {error && signedOut && <SignedOutNotice className="mt-4" />}
+        {error && !signedOut && (
           <p role="alert" className="mt-4 text-sm text-primary">
             {error}
           </p>

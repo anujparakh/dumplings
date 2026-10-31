@@ -9,6 +9,8 @@ interface Props {
 }
 
 const SIZE = { sm: 'h-4 w-4', lg: 'h-8 w-8' } as const;
+// Tap area around each editable icon; lg is at least 44px for fingers.
+const HIT = { sm: '', lg: 'h-11 w-11' } as const;
 
 export function DumplingRating({ value, onChange, size = 'sm' }: Props): JSX.Element {
   const ns = Array.from({ length: settings.ratingMax }, (_, i) => i + 1);
@@ -30,7 +32,13 @@ export function DumplingRating({ value, onChange, size = 'sm' }: Props): JSX.Ele
   return (
     <span className="inline-flex gap-1">
       {ns.map((n) => (
-        <button key={n} type="button" aria-label={text.rating.setLabel(n)} onClick={() => onChange(n)}>
+        <button
+          key={n}
+          type="button"
+          aria-label={text.rating.setLabel(n)}
+          onClick={() => onChange(n)}
+          className={`${HIT[size]} flex items-center justify-center`}
+        >
           {icon(n)}
         </button>
       ))}

@@ -11,3 +11,11 @@ test('header shows the app title from text config', () => {
 test("app title is Ruchi's Dumpling Map", () => {
   expect(text.appTitle).toBe("Ruchi's Dumpling Map");
 });
+
+test('menu button only renders when it has a sign-in item', () => {
+  const { unmount } = render(<MemoryRouter><Header /></MemoryRouter>);
+  expect(screen.queryByRole('button', { name: text.menu })).not.toBeInTheDocument();
+  unmount();
+  render(<MemoryRouter><Header showSignIn /></MemoryRouter>);
+  expect(screen.getByRole('button', { name: text.menu })).toBeInTheDocument();
+});

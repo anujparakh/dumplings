@@ -8,7 +8,8 @@ import { api, ApiError } from '../../src/lib/api';
 import { resizeImage } from '../../src/lib/image';
 import { SpotFormPage } from '../../src/pages/SpotFormPage';
 
-vi.mock('../../src/lib/api', () => ({
+vi.mock('../../src/lib/api', async (importOriginal) => ({
+  isSignedOut: (await importOriginal<typeof import('../../src/lib/api')>()).isSignedOut,
   api: {
     getSpot: vi.fn(),
     listTags: vi.fn(),
@@ -207,6 +208,39 @@ test('search failure shows a message and still allows dropping a pin', async () 
   expect(saveButton()).toBeEnabled();
 });
 
+test('search failing with 401 shows the sign-in hint instead of the generic message', async () => {
+  mocked.searchPlaces.mockRejectedValue(new ApiError(401, 'signed_out'));
+  renderAt('/admin/new');
+  fireEvent.change(screen.getByLabelText(text.form.name), { target: { value: 'golden' } });
+  expect(await screen.findByText(text.form.signedOut, { exact: false })).toBeInTheDocument();
+  expect(screen.queryByText(text.form.searchFailed)).not.toBeInTheDocument();
+  expect(screen.getByRole('link', { name: text.form.signInAgain })).toHaveAttribute('href', '/admin');
+});
+
+test('save while signed out shows the sign-in link and keeps the form', async () => {
+  mocked.createSpot.mockRejectedValueOnce(new ApiError(401, 'signed_out'));
+  renderAt('/admin/new');
+  await placeByPin('Golden Steamer');
+  fireEvent.click(screen.getByRole('button', { name: text.rating.setLabel(4) }));
+  fireEvent.change(screen.getByLabelText(text.form.notes), { target: { value: 'Crispy' } });
+  fireEvent.click(saveButton());
+
+  expect(await screen.findByText(text.form.signedOut, { exact: false })).toBeInTheDocument();
+  expect(screen.queryByText(text.form.saveFailed)).not.toBeInTheDocument();
+  const link = screen.getByRole('link', { name: text.form.signInAgain });
+  expect(link).toHaveAttribute('href', '/admin');
+  expect(link).toHaveAttribute('target', '_blank');
+  expect(link).toHaveAttribute('rel', 'noopener');
+  expect(location()).toHaveTextContent('/admin/new');
+  expect(screen.getByLabelText(text.form.name)).toHaveValue('Golden Steamer');
+  expect(screen.getByLabelText(text.form.notes)).toHaveValue('Crispy');
+
+  // After signing in again in the other tab, Save works without re-entering anything.
+  fireEvent.click(saveButton());
+  await waitFor(() => expect(location()).toHaveTextContent('/spot/new1'));
+  expect(mocked.createSpot.mock.calls[1][0]).toMatchObject({ name: 'Golden Steamer', rating: 4, notes: 'Crispy' });
+});
+
 test('out-of-order search responses are ignored', async () => {
   let resolveFirst: (v: Awaited<ReturnType<typeof api.searchPlaces>>) => void = () => {};
   mocked.searchPlaces
@@ -317,6 +351,17 @@ test('tags: new spot starts with newSpotTags; suggestions and free text add tags
   fireEvent.click(saveButton());
   await waitFor(() => expect(mocked.createSpot).toHaveBeenCalled());
   expect(mocked.createSpot.mock.calls[0][0].tags).toEqual(['Momos', 'Fully veg menu', 'Bao']);
+});
+
+test('tags: typing an existing tag in other casing reuses the existing casing', async () => {
+  renderAt('/admin/new');
+  const tags = screen.getByRole('group', { name: text.form.tags });
+  await within(tags).findByRole('button', { name: text.form.addTagSuggestion('Momos') });
+  const input = within(tags).getByLabelText(text.form.newTag);
+  fireEvent.change(input, { target: { value: 'momos' } });
+  fireEvent.keyDown(input, { key: 'Enter' });
+  expect(within(tags).getByRole('button', { name: text.form.removeTag('Momos') })).toBeInTheDocument();
+  expect(within(tags).queryByRole('button', { name: text.form.removeTag('momos') })).not.toBeInTheDocument();
 });
 
 test('delete asks for confirmation, then deletes and goes home', async () => {

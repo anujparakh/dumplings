@@ -15,6 +15,8 @@ interface Props {
   /** Initial camera; defaults to settings.defaultCenter and settings.defaultZoom. */
   center?: LatLng;
   zoom?: number;
+  /** The map fits to the spots on the first non-empty load and again whenever this changes. */
+  fitKey?: string;
 }
 
 function pinElement(src: string, label?: string): HTMLElement {
@@ -33,12 +35,14 @@ function pinElement(src: string, label?: string): HTMLElement {
 }
 
 // Default export so HomePage can React.lazy() it and tests never load maplibre (WebGL).
-export default function MapView({ spots, onSelect, onMapTap, marker, center, zoom }: Props): JSX.Element {
+export default function MapView({ spots, onSelect, onMapTap, marker, center, zoom, fitKey }: Props): JSX.Element {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   // Keep the latest callbacks without re-creating the map or markers.
   const handlers = useRef({ onSelect, onMapTap });
   handlers.current = { onSelect, onMapTap };
+  // The fitKey the camera was last fitted for; null until the first fit.
+  const fittedFor = useRef<{ key: string | undefined } | null>(null);
 
   useEffect(() => {
     const m = new maplibregl.Map({
@@ -68,13 +72,15 @@ export default function MapView({ spots, onSelect, onMapTap, marker, center, zoo
       });
       return new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat([spot.lng, spot.lat]).addTo(m);
     });
-    if (spots.length > 0) {
+    // Toggling chips only hides pins, so the camera stays put; a new fitKey (e.g. a tag) refits.
+    if (spots.length > 0 && (fittedFor.current === null || fittedFor.current.key !== fitKey)) {
+      fittedFor.current = { key: fitKey };
       const bounds = new maplibregl.LngLatBounds();
       spots.forEach((s) => bounds.extend([s.lng, s.lat]));
       m.fitBounds(bounds, { padding: settings.mapFitPadding, maxZoom: settings.mapFitMaxZoom, duration: 0 });
     }
     return () => markers.forEach((mk) => mk.remove());
-  }, [spots]);
+  }, [spots, fitKey]);
 
   const lat = marker?.lat;
   const lng = marker?.lng;

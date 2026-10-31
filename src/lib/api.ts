@@ -8,6 +8,10 @@ export class ApiError extends Error {
   }
 }
 
+/** True when a write failed because her Access session expired (she needs to sign in again). */
+export const isSignedOut = (e: unknown): boolean =>
+  e instanceof Error && (e as Partial<ApiError>).status === 401;
+
 async function fail(res: Response): Promise<never> {
   let code = `http_${res.status}`;
   try {
@@ -20,7 +24,12 @@ async function fail(res: Response): Promise<never> {
 }
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, init);
+  // When the Access session has expired, Access redirects admin calls to its login page.
+  // Following that cross-origin redirect fails like a network error, so stop at the redirect
+  // and report it as signed out instead.
+  const admin = url.startsWith('/api/admin/');
+  const res = await fetch(url, admin ? { ...init, redirect: 'manual' } : init);
+  if (admin && (res.type === 'opaqueredirect' || res.status === 0)) throw new ApiError(401, 'signed_out');
   if (!res.ok) return fail(res);
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;

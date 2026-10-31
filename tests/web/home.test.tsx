@@ -150,7 +150,7 @@ test('+ button shown when signed in, links to /admin/new', async () => {
   mocked.me.mockResolvedValue({ email: 'r@x.com' });
   renderHome('/');
   expect(await screen.findByRole('link', { name: text.addSpot })).toHaveAttribute('href', '/admin/new');
-  fireEvent.click(screen.getByRole('button', { name: text.menu }));
+  expect(screen.queryByRole('button', { name: text.menu })).not.toBeInTheDocument();
   expect(screen.queryByRole('link', { name: text.signIn })).not.toBeInTheDocument();
 });
 
@@ -187,4 +187,16 @@ test('map view renders the lazy map with filtered spots', async () => {
   renderHome('/?want=0');
   expect(await screen.findByTestId('map')).toHaveTextContent('2');
   expect(screen.getByRole('button', { name: text.filters.want })).toHaveAttribute('aria-pressed', 'false');
+});
+
+test('spots exist but the chips hide them all: shows text.empty.noMatches', async () => {
+  renderHome('/?view=feed&been=0&want=0');
+  expect(await screen.findByText(text.empty.noMatches)).toBeInTheDocument();
+  expect(screen.queryByText(text.empty.noSpots)).not.toBeInTheDocument();
+});
+
+test('a tag with no spots: shows text.empty.noMatches', async () => {
+  mocked.listSpots.mockResolvedValue([]);
+  renderHome('/?view=feed&tag=Momos');
+  expect(await screen.findByText(text.empty.noMatches)).toBeInTheDocument();
 });

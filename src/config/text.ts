@@ -1,7 +1,10 @@
 // All user-facing copy lives here. Components import from this file.
+import { settings } from './settings';
+
 export const text = {
   appTitle: "Ruchi's Dumpling Map",
   menu: 'Menu',
+  menuSymbol: '\u2630',
   signIn: 'Sign in',
   addSpot: 'Add a spot',
   addSpotSymbol: '+',
@@ -23,6 +26,7 @@ export const text = {
   },
   empty: {
     noSpots: 'No spots yet.',
+    noMatches: 'No spots match these filters.',
   },
   errors: {
     loadSpots: "Couldn't load spots. Try again later.",
@@ -34,9 +38,9 @@ export const text = {
     wantToGo: 'On the list to try.',
   },
   rating: {
-    setLabel: (n: number): string => `Rate ${n} out of 5`,
+    setLabel: (n: number): string => `Rate ${n} out of ${settings.ratingMax}`,
     valueLabel: (value: number | null): string =>
-      value === null ? 'Not rated' : `Rated ${value} out of 5`,
+      value === null ? 'Not rated' : `Rated ${value} out of ${settings.ratingMax}`,
   },
   units: {
     miles: 'mi',
@@ -96,5 +100,7 @@ export const text = {
     delete: 'Delete spot',
     confirmDelete: 'Delete this spot? This cannot be undone.',
     deleteFailed: "Couldn't delete. Try again.",
+    signedOut: 'You were signed out. Sign in again in a new tab, then come back here and try again. Nothing on this page is lost.',
+    signInAgain: 'Sign in again',
   },
 } as const;
