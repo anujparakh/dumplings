@@ -12,5 +12,9 @@ export const text = {
     map: 'Map',
     feed: 'Feed',
   },
+  preview: {
+    defaultDescription: 'Ruchi\'s favorite dumpling spots, mapped.',
+    wantToGo: 'On the list to try.',
+  },
   notFound: "We couldn't find that spot.",
 } as const;
