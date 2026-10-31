@@ -6,6 +6,7 @@ import { settings } from '../src/config/settings';
 import {
   addPhoto, createSpot, deletePhoto, deleteSpot, getPhotoKey, getSpot, listSpots, listTags, updateSpot,
 } from './db/spots';
+import { searchPlaces } from './search';
 
 const PHOTO_EXT: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
 const positiveInt = (v: string | undefined) => (v !== undefined && /^\d+$/.test(v) && Number(v) > 0 ? Number(v) : null);
@@ -16,11 +17,25 @@ export interface AppDeps {
 }
 
 export function createApp(deps: AppDeps = {}) {
+  const fetchFn = deps.fetch ?? fetch;
   const verify = deps.verifyAccessJwt ?? verifyAccessJwtWithJose;
   const app = new Hono<{ Bindings: Env; Variables: { editorEmail: string } }>().basePath('/api');
 
   app.use('/admin/*', requireEditor(verify));
   app.get('/admin/me', (c) => c.json({ email: c.get('editorEmail') }));
+
+  app.get('/admin/search', async (c) => {
+    const latRaw = c.req.query('lat');
+    const lngRaw = c.req.query('lng');
+    const lat = latRaw ? Number(latRaw) : NaN;
+    const lng = lngRaw ? Number(lngRaw) : NaN;
+    const near = Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+    try {
+      return c.json(await searchPlaces(c.req.query('q') ?? '', near, c.env, fetchFn));
+    } catch {
+      return c.json({ error: 'search_failed' }, 502);
+    }
+  });
 
   const parseInput = async (req: Request) => {
     let body: unknown;
