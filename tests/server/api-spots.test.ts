@@ -2,10 +2,11 @@ import { env } from 'cloudflare:workers';
 import { beforeEach, expect, test } from 'vitest';
 import { createApp } from '../../server/app';
 import { addPhoto, listSpots } from '../../server/db/spots';
-import { fakeVerifier } from './helpers';
+import { editorCookie } from './helpers';
 
-const app = createApp({ verifyAccessJwt: fakeVerifier('ruchi@example.com') });
-const authHeaders = { 'Cf-Access-Jwt-Assertion': 'test', 'Content-Type': 'application/json' };
+const app = createApp();
+const cookie = await editorCookie();
+const authHeaders = { Cookie: cookie, 'Content-Type': 'application/json' };
 
 const been = { name: 'Golden Steamer', address: '123 Main St', lat: 29.76, lng: -95.37,
   status: 'been', rating: 4, notes: 'Crispy', visitedOn: '2026-10-12', tags: ['Dumplings'] };
@@ -160,7 +161,7 @@ test('GET /api/tags lists distinct tags', async () => {
 });
 
 test('POST and PUT without a JSON Content-Type -> 415', async () => {
-  const form = { 'Cf-Access-Jwt-Assertion': 'test', 'Content-Type': 'text/plain' };
+  const form = { Cookie: cookie, 'Content-Type': 'text/plain' };
   const r = await app.request('/api/admin/spots', { method: 'POST', headers: form, body: JSON.stringify(been) }, env);
   expect(r.status).toBe(415);
   expect(await r.json()).toEqual({ error: 'unsupported_media_type' });
@@ -173,7 +174,7 @@ test('POST and PUT without a JSON Content-Type -> 415', async () => {
 test('Content-Type with a charset is still accepted', async () => {
   const r = await app.request('/api/admin/spots', {
     method: 'POST',
-    headers: { 'Cf-Access-Jwt-Assertion': 'test', 'Content-Type': 'application/json; charset=utf-8' },
+    headers: { Cookie: cookie, 'Content-Type': 'application/json; charset=utf-8' },
     body: JSON.stringify(been),
   }, env);
   expect(r.status).toBe(201);

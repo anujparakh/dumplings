@@ -6,7 +6,7 @@ import { text } from '../../src/config/text';
 import { api } from '../../src/lib/api';
 import { SpotPage } from '../../src/pages/SpotPage';
 
-vi.mock('../../src/lib/api', () => ({ api: { getSpot: vi.fn(), me: vi.fn() } }));
+vi.mock('../../src/lib/api', () => ({ api: { getSpot: vi.fn(), isSignedIn: vi.fn() } }));
 const mocked = vi.mocked(api);
 
 const been: Spot = {
@@ -32,7 +32,7 @@ function renderPage(id: string): void {
 }
 
 beforeEach(() => {
-  mocked.me.mockResolvedValue(null);
+  mocked.isSignedIn.mockResolvedValue(false);
   mocked.getSpot.mockImplementation(async (id: string) => (id === 's1' ? been : id === 's2' ? want : null));
 });
 afterEach(() => {
@@ -55,7 +55,7 @@ test('been spot shows rating, notes, tags, formatted date', async () => {
 });
 
 test('want spot shows no rating and, when signed in, an I went! link to ?went=1', async () => {
-  mocked.me.mockResolvedValue({ email: 'r@x.com' });
+  mocked.isSignedIn.mockResolvedValue(true);
   renderPage('s2');
   const went = await screen.findByRole('link', { name: text.spot.iWent });
   expect(went).toHaveAttribute('href', '/admin/spot/s2/edit?went=1');

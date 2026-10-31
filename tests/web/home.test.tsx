@@ -7,7 +7,7 @@ import { api } from '../../src/lib/api';
 import { HomePage } from '../../src/pages/HomePage';
 
 vi.mock('../../src/lib/api', () => ({
-  api: { listSpots: vi.fn(), listTags: vi.fn(), me: vi.fn() },
+  api: { listSpots: vi.fn(), listTags: vi.fn(), isSignedIn: vi.fn() },
   ApiError: class extends Error {},
 }));
 
@@ -83,7 +83,7 @@ function stubGeolocation(ok: boolean): void {
 beforeEach(() => {
   mocked.listSpots.mockResolvedValue([golden, momo, lab]);
   mocked.listTags.mockResolvedValue(['Dumplings', 'Momos']);
-  mocked.me.mockResolvedValue(null);
+  mocked.isSignedIn.mockResolvedValue(false);
   stubGeolocation(false);
 });
 
@@ -140,14 +140,14 @@ test('tag dropdown filters and writes ?tag= to URL', async () => {
 
 test('+ button only when signed in', async () => {
   renderHome('/');
-  await waitFor(() => expect(mocked.me).toHaveBeenCalled());
+  await waitFor(() => expect(mocked.isSignedIn).toHaveBeenCalled());
   fireEvent.click(screen.getByRole('button', { name: text.menu }));
-  expect(await screen.findByRole('link', { name: text.signIn })).toHaveAttribute('href', '/admin');
+  expect(await screen.findByRole('link', { name: text.signIn })).toHaveAttribute('href', '/login');
   expect(screen.queryByRole('link', { name: text.addSpot })).not.toBeInTheDocument();
 });
 
 test('+ button shown when signed in, links to /admin/new', async () => {
-  mocked.me.mockResolvedValue({ email: 'r@x.com' });
+  mocked.isSignedIn.mockResolvedValue(true);
   renderHome('/');
   expect(await screen.findByRole('link', { name: text.addSpot })).toHaveAttribute('href', '/admin/new');
   expect(screen.queryByRole('button', { name: text.menu })).not.toBeInTheDocument();

@@ -5,8 +5,8 @@ export function SignedOutNotice({ className = '' }: { className?: string }): JSX
   return (
     <p role="alert" className={`text-sm text-primary ${className}`}>
       {text.form.signedOut}{' '}
-      {/* Full page load in a new tab so Cloudflare Access can sign her in again. */}
-      <a href="/admin" target="_blank" rel="noopener" className="font-bold underline">
+      {/* A new tab keeps this form; the sign-in cookie is shared with this tab. */}
+      <a href="/login" target="_blank" rel="noopener" className="font-bold underline">
         {text.form.signInAgain}
       </a>
     </p>

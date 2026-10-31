@@ -19,6 +19,7 @@ vi.mock('../../src/lib/api', async (importOriginal) => ({
     uploadPhoto: vi.fn(),
     deletePhoto: vi.fn(),
     searchPlaces: vi.fn(),
+    isSignedIn: vi.fn(),
   },
   ApiError: class ApiError extends Error {
     constructor(public status: number, public code: string) {
@@ -54,6 +55,7 @@ function renderAt(url: string): void {
     <MemoryRouter initialEntries={[url]}>
       <Routes>
         <Route path="/" element={null} />
+        <Route path="/login" element={null} />
         <Route path="/spot/:id" element={null} />
         <Route path="/admin/new" element={<SpotFormPage />} />
         <Route path="/admin/spot/:id/edit" element={<SpotFormPage />} />
@@ -112,6 +114,7 @@ async function placeByPin(name: string): Promise<void> {
 const saveButton = (): HTMLElement => screen.getByRole('button', { name: text.form.save });
 
 beforeEach(() => {
+  mocked.isSignedIn.mockResolvedValue(true);
   mocked.listTags.mockResolvedValue(['Dumplings', 'Momos']);
   mocked.searchPlaces.mockResolvedValue([]);
   mocked.createSpot.mockImplementation(async (i: SpotInput) => spot({ ...i, id: 'new1' }));
@@ -214,7 +217,7 @@ test('search failing with 401 shows the sign-in hint instead of the generic mess
   fireEvent.change(screen.getByLabelText(text.form.name), { target: { value: 'golden' } });
   expect(await screen.findByText(text.form.signedOut, { exact: false })).toBeInTheDocument();
   expect(screen.queryByText(text.form.searchFailed)).not.toBeInTheDocument();
-  expect(screen.getByRole('link', { name: text.form.signInAgain })).toHaveAttribute('href', '/admin');
+  expect(screen.getByRole('link', { name: text.form.signInAgain })).toHaveAttribute('href', '/login');
 });
 
 test('save while signed out shows the sign-in link and keeps the form', async () => {
@@ -228,7 +231,7 @@ test('save while signed out shows the sign-in link and keeps the form', async ()
   expect(await screen.findByText(text.form.signedOut, { exact: false })).toBeInTheDocument();
   expect(screen.queryByText(text.form.saveFailed)).not.toBeInTheDocument();
   const link = screen.getByRole('link', { name: text.form.signInAgain });
-  expect(link).toHaveAttribute('href', '/admin');
+  expect(link).toHaveAttribute('href', '/login');
   expect(link).toHaveAttribute('target', '_blank');
   expect(link).toHaveAttribute('rel', 'noopener');
   expect(location()).toHaveTextContent('/admin/new');
@@ -405,4 +408,11 @@ describe('pin map camera', () => {
     renderAt('/admin/new');
     expect(await openPinMap()).toMatchObject({ center: settings.defaultCenter, zoom: settings.defaultZoom });
   });
+});
+
+test('signed-out visitors are sent to sign in, then back here', async () => {
+  mocked.isSignedIn.mockResolvedValue(false);
+  mocked.getSpot.mockResolvedValue(spot({}));
+  renderAt('/admin/spot/g1/edit?went=1');
+  await waitFor(() => expect(location()).toHaveTextContent(`/login?next=${encodeURIComponent('/admin/spot/g1/edit?went=1')}`));
 });

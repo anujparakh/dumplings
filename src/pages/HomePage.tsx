@@ -48,7 +48,7 @@ function useHomeQuery() {
 
 export function HomePage(): JSX.Element {
   const q = useHomeQuery();
-  const { email, loading } = useEditor();
+  const { signedIn, loading } = useEditor();
   const userLocation = useUserLocation();
   const navigate = useNavigate();
   const [all, setAll] = useState<SpotSummary[] | null>(null);
@@ -91,7 +91,7 @@ export function HomePage(): JSX.Element {
   const emptyMessage =
     all === null ? undefined : failed ? text.errors.loadSpots : filtered ? text.empty.noMatches : text.empty.noSpots;
 
-  const addButton = email ? (
+  const addButton = signedIn ? (
     <Link
       to="/admin/new"
       aria-label={text.addSpot}
@@ -105,7 +105,7 @@ export function HomePage(): JSX.Element {
     // Pointer events pass through the gaps to the map; only the controls catch taps.
     <div className="pointer-events-none flex flex-col gap-2 p-2.5 *:pointer-events-auto">
       <div className="*:rounded-card">
-        <Header showSignIn={!loading && !email} />
+        <Header showSignIn={!loading && !signedIn} />
       </div>
       <div className="self-start">
         <FilterBar

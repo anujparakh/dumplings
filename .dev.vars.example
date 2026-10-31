@@ -1,5 +1,2 @@
-DEV_AUTH_EMAIL=you@example.com
-EDITOR_EMAILS=you@example.com
-# Leave empty locally. It overrides the wrangler.toml [vars] value, and DEV_AUTH_EMAIL is
-# only honored when ACCESS_TEAM_DOMAIN is empty, so production always checks the Access JWT.
-ACCESS_TEAM_DOMAIN=
+# The editor password for local dev. In production it is a secret (see README).
+EDITOR_PASSWORD=dev

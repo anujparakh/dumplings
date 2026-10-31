@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { requireEditor, verifyAccessJwtWithJose, type AccessVerifier } from './auth';
+import { passwordMatches, requireEditor, startSession } from './auth';
 import type { Env } from './env';
 import { spotInputSchema } from './validation';
 import { settings } from '../src/config/settings';
@@ -12,17 +12,30 @@ const PHOTO_EXT: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'p
 const positiveInt = (v: string | undefined) => (v !== undefined && /^\d+$/.test(v) && Number(v) > 0 ? Number(v) : null);
 
 export interface AppDeps {
-  verifyAccessJwt?: AccessVerifier;
   fetch?: typeof fetch;
 }
 
 export function createApp(deps: AppDeps = {}) {
   const fetchFn = deps.fetch ?? fetch;
-  const verify = deps.verifyAccessJwt ?? verifyAccessJwtWithJose;
-  const app = new Hono<{ Bindings: Env; Variables: { editorEmail: string } }>().basePath('/api');
+  const app = new Hono<{ Bindings: Env }>().basePath('/api');
 
-  app.use('/admin/*', requireEditor(verify));
-  app.get('/admin/me', (c) => c.json({ email: c.get('editorEmail') }));
+  app.post('/login', async (c) => {
+    if (!c.env.EDITOR_PASSWORD) return c.json({ error: 'not_configured' }, 503);
+    let password: unknown;
+    try {
+      ({ password } = (await c.req.json()) as { password?: unknown });
+    } catch {
+      password = undefined;
+    }
+    if (typeof password !== 'string' || !(await passwordMatches(password, c.env.EDITOR_PASSWORD))) {
+      return c.json({ error: 'wrong_password' }, 401);
+    }
+    await startSession(c, c.env.EDITOR_PASSWORD);
+    return c.body(null, 204);
+  });
+
+  app.use('/admin/*', requireEditor);
+  app.get('/admin/me', (c) => c.json({ signedIn: true }));
 
   app.get('/admin/search', async (c) => {
     const latRaw = c.req.query('lat');

@@ -18,6 +18,8 @@ export const settings = {
   searchDebounceMs: 300,
   // Street-level zoom for the "drop a pin" map when it opens at a known place or her location.
   pinZoom: 17,
+  // Days a sign-in lasts on a device before the password is asked for again.
+  signInDays: 90,
   directionsUrl: (lat: number, lng: number): string =>
     `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`,
   // Indexing is blocked in three places: the <meta name="robots"> tag in index.html,

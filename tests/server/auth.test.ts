@@ -1,64 +1,70 @@
 import { env } from 'cloudflare:workers';
-import { expect, test } from 'vitest';
+import { expect, test, vi } from 'vitest';
 import { createApp } from '../../server/app';
-import { fakeVerifier } from './helpers';
+import { editorCookie } from './helpers';
 
-const withJwt = { headers: { 'Cf-Access-Jwt-Assertion': 'token' } };
-
-test('no Cf-Access-Jwt-Assertion header -> 401', async () => {
-  const app = createApp({ verifyAccessJwt: fakeVerifier('ruchi@example.com') });
-  const res = await app.request('/api/admin/me', {}, env);
-  expect(res.status).toBe(401);
-});
-
-test('verifier throws -> 401', async () => {
-  const app = createApp({
-    verifyAccessJwt: async () => {
-      throw new Error('bad token');
-    },
-  });
-  const res = await app.request('/api/admin/me', withJwt, env);
-  expect(res.status).toBe(401);
-});
-
-test('valid token, email not in EDITOR_EMAILS -> 403', async () => {
-  const app = createApp({ verifyAccessJwt: fakeVerifier('stranger@example.com') });
-  const res = await app.request('/api/admin/me', withJwt, env);
-  expect(res.status).toBe(403);
-});
-
-test('email match is case-insensitive', async () => {
-  const app = createApp({ verifyAccessJwt: fakeVerifier('Ruchi@Example.com') });
-  const res = await app.request('/api/admin/me', withJwt, env);
-  expect(res.status).toBe(200);
-});
-
-test('/api/admin/me returns the email', async () => {
-  const app = createApp({ verifyAccessJwt: fakeVerifier('owner@example.com') });
-  const res = await app.request('/api/admin/me', withJwt, env);
-  expect(res.status).toBe(200);
-  expect(await res.json()).toEqual({ email: 'owner@example.com' });
-});
-
-test('DEV_AUTH_EMAIL bypasses JWT but still enforces allowlist', async () => {
-  const app = createApp({
-    verifyAccessJwt: async () => {
-      throw new Error('should not be called');
-    },
-  });
-  const ok = await app.request('/api/admin/me', {}, { ...env, DEV_AUTH_EMAIL: 'ruchi@example.com' });
-  expect(ok.status).toBe(200);
-  expect(await ok.json()).toEqual({ email: 'ruchi@example.com' });
-  const denied = await app.request('/api/admin/me', {}, { ...env, DEV_AUTH_EMAIL: 'nope@example.com' });
-  expect(denied.status).toBe(403);
-});
-
-test('DEV_AUTH_EMAIL is ignored when ACCESS_TEAM_DOMAIN is set', async () => {
-  const app = createApp({ verifyAccessJwt: fakeVerifier('ruchi@example.com') });
-  const res = await app.request(
-    '/api/admin/me',
-    {},
-    { ...env, DEV_AUTH_EMAIL: 'ruchi@example.com', ACCESS_TEAM_DOMAIN: 'team.cloudflareaccess.com' },
+const app = createApp();
+const login = (body: unknown, e: object = env) =>
+  app.request(
+    '/api/login',
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) },
+    e,
   );
-  expect(res.status).toBe(401);
+const me = (cookie?: string, e: object = env) =>
+  app.request('/api/admin/me', cookie ? { headers: { Cookie: cookie } } : {}, e);
+
+test('no cookie -> 401', async () => {
+  expect((await me()).status).toBe(401);
+});
+
+test('wrong or missing password -> 401 and no cookie', async () => {
+  for (const body of [{ password: 'nope' }, { password: '' }, {}, { password: 42 }]) {
+    const res = await login(body);
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ error: 'wrong_password' });
+    expect(res.headers.get('Set-Cookie')).toBeNull();
+  }
+});
+
+test('right password -> locked-down cookie that unlocks admin routes', async () => {
+  const res = await login({ password: 'test-password' });
+  expect(res.status).toBe(204);
+  const setCookie = res.headers.get('Set-Cookie')!;
+  expect(setCookie).toMatch(/HttpOnly/i);
+  expect(setCookie).toMatch(/Secure/i);
+  expect(setCookie).toMatch(/SameSite=Strict/i);
+  const ok = await me(setCookie.split(';')[0]);
+  expect(ok.status).toBe(200);
+  expect(await ok.json()).toEqual({ signedIn: true });
+});
+
+test('forged or tampered cookie -> 401', async () => {
+  const real = await editorCookie();
+  const [name, value] = real.split('=');
+  const [, signature] = decodeURIComponent(value).split('.');
+  const later = String(Date.now() + 10 ** 12);
+  expect((await me(`${name}=${encodeURIComponent(`${later}.${signature}`)}`)).status).toBe(401);
+  expect((await me(`${name}=${later}`)).status).toBe(401);
+});
+
+test('changing the password signs everyone out', async () => {
+  const cookie = await editorCookie();
+  expect((await me(cookie, { ...env, EDITOR_PASSWORD: 'new-password' })).status).toBe(401);
+});
+
+test('expired session -> 401', async () => {
+  const cookie = await editorCookie();
+  vi.useFakeTimers({ now: Date.now() + 91 * 24 * 60 * 60 * 1000 });
+  try {
+    expect((await me(cookie)).status).toBe(401);
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+test('no password configured -> login 503 and admin routes stay locked', async () => {
+  const cookie = await editorCookie();
+  const noPassword = { ...env, EDITOR_PASSWORD: '' };
+  expect((await login({ password: '' }, noPassword)).status).toBe(503);
+  expect((await me(cookie, noPassword)).status).toBe(401);
 });

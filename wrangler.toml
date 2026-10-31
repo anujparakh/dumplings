@@ -15,6 +15,4 @@ bucket_name = "dumplings-photos"
 
 [vars]
 SEARCH_PROVIDER = "photon"
-EDITOR_EMAILS = ""
-ACCESS_TEAM_DOMAIN = ""
-ACCESS_AUD = ""
+# EDITOR_PASSWORD is a secret, not a var: npx wrangler pages secret put EDITOR_PASSWORD

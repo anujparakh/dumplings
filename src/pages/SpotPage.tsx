@@ -24,7 +24,7 @@ function BackLink(): JSX.Element {
 
 export function SpotPage(): JSX.Element {
   const { id = '' } = useParams();
-  const { email } = useEditor();
+  const { signedIn } = useEditor();
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [copied, setCopied] = useState(false);
 
@@ -117,7 +117,7 @@ export function SpotPage(): JSX.Element {
               {text.spot.linkCopied}
             </p>
           )}
-          {email && (
+          {signedIn && (
             <div className="flex gap-2">
               <Link to={editPath} className={BUTTON}>
                 {text.spot.edit}

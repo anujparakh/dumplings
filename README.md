@@ -2,7 +2,7 @@
 
 A mobile-first web map of Ruchi's vegetarian dumpling spots. Anyone with the link can browse. Ruchi and the owner sign in to add spots, ratings, notes, and photos. Spots are "Been there" or "Want to go", and new foods are just new tags.
 
-Stack: React + Vite + Tailwind, MapLibre (OpenFreeMap tiles), Hono on Cloudflare Pages Functions, D1 (database), R2 (photos), Cloudflare Access (sign-in).
+Stack: React + Vite + Tailwind, MapLibre (OpenFreeMap tiles), Hono on Cloudflare Pages Functions, D1 (database), R2 (photos). Editing is unlocked with one shared password.
 
 ## Prerequisites
 
@@ -20,7 +20,7 @@ Stack: React + Vite + Tailwind, MapLibre (OpenFreeMap tiles), Hono on Cloudflare
    ```bash
    cp .dev.vars.example .dev.vars
    ```
-   `DEV_AUTH_EMAIL` makes the API treat every request as that person, so you can add and edit spots locally without Cloudflare Access. It must be one of the `EDITOR_EMAILS`. The empty `ACCESS_TEAM_DOMAIN=` line overrides the `wrangler.toml` value locally: the API only honors `DEV_AUTH_EMAIL` when `ACCESS_TEAM_DOMAIN` is empty, so once Access is configured in production a stray `DEV_AUTH_EMAIL` is ignored. Still, never set `DEV_AUTH_EMAIL` in production. `.dev.vars` is gitignored.
+   It sets the local editor password (`EDITOR_PASSWORD=dev`). To add or edit spots locally, tap the menu > Sign in and enter it. `.dev.vars` is gitignored.
 3. Create the local database and apply migrations:
    ```bash
    npm run db:migrate:local
@@ -46,7 +46,7 @@ npm run dev -- --host
 
 Open the "Network" URL it prints (something like `http://192.168.1.20:5173`) on your phone, with `dev:api` still running.
 
-Caveat: browsers only allow geolocation (and some camera behaviors) on HTTPS or localhost. Over a LAN IP, "near me" distance and centering the pin on your location will not work. Options:
+Caveat: browsers only allow geolocation (and some camera behaviors) on HTTPS or localhost, and the sign-in cookie is HTTPS-only too. Over a LAN IP you can browse, but you cannot sign in, and "near me" distance and centering the pin on your location will not work. Options:
 
 - Test those parts on the deployed site (see below).
 - Optional: use a tunnel that gives you an HTTPS URL, for example `cloudflared tunnel --url http://localhost:5173` (needs the `cloudflared` tool installed; Vite may also need `server.allowedHosts` set for the tunnel hostname).
@@ -86,37 +86,30 @@ Run these from the project folder, after `npx wrangler login`.
    The D1 and R2 bindings and the `[vars]` come from `wrangler.toml`. The site is now live at `https://dumplings.pages.dev` (the exact name is printed at the end).
 6. Add your domain: Cloudflare dashboard > Workers & Pages > dumplings > Custom domains > Set up a custom domain. Pick a name on your Cloudflare domain (for example `dumplings.yourdomain.com`). DNS and HTTPS are set up for you.
 
-At this point editing does not work yet: every edit API call returns 401 until Cloudflare Access is configured in the next section.
+At this point editing does not work yet: every edit API call returns 401 until you set a password in the next section.
 
-## Lock down editing with Cloudflare Access
+## Set the editor password
 
-Cloudflare Access (Zero Trust, free plan for up to 50 users) puts an email-code login in front of editing.
+Editing is unlocked with one password that you and Ruchi share. Anyone can browse without it.
 
-1. Dashboard > Zero Trust (first time: pick a team name and the Free plan; you may be asked for a payment method but the free plan is not charged). Your team domain is `<team>.cloudflareaccess.com`.
-2. Zero Trust > Access > Applications > Add an application > Self-hosted.
-3. Add two paths on your custom domain (Access needs the wildcard form):
-   - `dumplings.yourdomain.com/admin*`
-   - `dumplings.yourdomain.com/api/admin*`
-4. Add an Allow policy with an Emails include rule listing Ruchi's email and yours.
-5. Under login methods, enable One-time PIN.
-6. Set the application's Session Duration to the maximum (1 month), so Ruchi is rarely signed out mid-edit. If a session does expire while she is filling in a spot, the form shows a "Sign in again" link that opens in a new tab; after signing in there she taps Save again and nothing is lost.
-7. Save, then open the application and copy its Application Audience (AUD) tag.
-8. Put the values in `wrangler.toml` under `[vars]`:
-   ```toml
-   [vars]
-   SEARCH_PROVIDER = "photon"
-   EDITOR_EMAILS = "ruchi@example.com,you@example.com"
-   ACCESS_TEAM_DOMAIN = "yourteam.cloudflareaccess.com"
-   ACCESS_AUD = "the-long-aud-tag"
+1. Pick a long password, for example four random words (`velvet-lantern-pickle-harbor`). Anyone can try guessing, so length matters more than symbols.
+2. Save it as a secret (paste it when asked):
+   ```bash
+   npx wrangler pages secret put EDITOR_PASSWORD
    ```
-   Then redeploy (`npm run build && npx wrangler pages deploy dist --branch main`). The team domain and AUD tag are identifiers, not secrets (the signature check is what protects you). The emails would be committed to the repo, so if the repo is public you may prefer to keep them out of it (see the note below).
-9. The `*.pages.dev` URL serves the same app. Either add `dumplings.pages.dev/admin*` and `dumplings.pages.dev/api/admin*` as extra paths on the same Access application, or accept that editing there is rejected (the API checks the Access token, so it returns 401 without a login, which is safe; you just cannot sign in there).
+3. Redeploy so the secret takes effect:
+   ```bash
+   npm run build && npx wrangler pages deploy dist --branch main
+   ```
+4. On the site, tap the menu > Sign in and enter the password. Each phone stays signed in for 90 days (`signInDays` in `src/config/settings.ts`). If a sign-in expires while she is filling in a spot, the form shows a "Sign in again" link that opens in a new tab; after signing in there she taps Save again and nothing is lost.
+5. Recommended: slow down password guessing with Cloudflare's free rate limiting. Dashboard > your domain > Security > WAF > Rate limiting rules > Create rule:
+   - If incoming requests match: URI Path equals `/api/login`
+   - Rate: 5 requests per 10 seconds, counted per IP
+   - Action: Block for 10 seconds
 
-Note on vars: because this project has a `wrangler.toml`, Cloudflare treats that file as the source of truth for Pages variables and bindings, and the dashboard's Settings > Variables for those are read-only. To keep `EDITOR_EMAILS` out of a public repo, remove that line from `[vars]` and store it as a secret instead (secrets are still managed outside the file):
-```bash
-npx wrangler pages secret put EDITOR_EMAILS
-```
-Secrets take effect on the next deployment.
+   This only covers your custom domain, not `dumplings.pages.dev`.
+
+To change the password, run step 2 again with the new one and redeploy. Every phone is signed out and needs the new password, which is also how you lock someone out.
 
 ## Updating later
 
@@ -133,7 +126,7 @@ npx wrangler d1 migrations apply dumplings --remote
 ## Smoke test after deploying
 
 1. In a private/incognito window, browse the site: the map and spots load and there is no "+" button.
-2. Go to `/admin`: you are asked for your email, then a one-time code. After signing in, the "+" appears.
+2. Tap the menu > Sign in and enter the password. After signing in, the "+" appears.
 3. From your phone, add a "Been there" spot with photos, and a "Want to go" spot. Open the want spot and use "I went!".
 4. Text a spot link to yourself: the preview shows the spot name, rating, and photo.
 5. Check the site is hidden from search engines (expect `x-robots-tag: noindex`):
@@ -142,7 +135,7 @@ npx wrangler d1 migrations apply dumplings --remote
    curl -I https://dumplings.yourdomain.com/spot/<id>
    ```
    Use a real spot id (from a shared link). Both responses must include `x-robots-tag: noindex`.
-6. Check writes are blocked when signed out (expect 401, or a redirect to the Access login):
+6. Check writes are blocked when signed out (expect 401):
    ```bash
    curl -i -X POST https://dumplings.yourdomain.com/api/admin/spots
    ```
@@ -169,10 +162,9 @@ Place search uses Photon (free, no key) by default. To switch to Google Places, 
 ## Troubleshooting
 
 - `Wrangler requires at least Node.js v22.0.0`: upgrade Node (`nvm install 22 && nvm use 22`).
-- 401 from `/api/admin/...` locally: `.dev.vars` is missing, lacks the empty `ACCESS_TEAM_DOMAIN=` line, or `dev:api` was started before you created it. Create it and restart `dev:api`.
-- 403 from `/api/admin/...`: your email (`DEV_AUTH_EMAIL` locally, or your Access login in production) is not in `EDITOR_EMAILS`.
+- 401 from `/api/admin/...`: you are not signed in (menu > Sign in). Locally, `.dev.vars` must exist with `EDITOR_PASSWORD` before `dev:api` starts.
+- Sign-in fails with "Couldn't sign in": `EDITOR_PASSWORD` is not set (the API returns 503). Set the secret and redeploy, or restart `dev:api` after editing `.dev.vars`.
+- Sign-in works but you are immediately signed out again: you are on plain `http://` other than localhost (the cookie is HTTPS-only). Use the deployed site or localhost.
 - D1 "no such table": run `npm run db:migrate:local` (local) or `npx wrangler d1 migrations apply dumplings --remote` (deployed).
 - `/spot/:id` shows old content or 404 locally: re-run `npm run build`, then restart `dev:api`.
 - Photos do not load or upload fails: check the R2 bucket exists (`npx wrangler r2 bucket list`) and the `PHOTOS` binding in `wrangler.toml` names it `dumplings-photos`; redeploy after changing `wrangler.toml`.
-- Deployed site says unauthorized after signing in: `ACCESS_TEAM_DOMAIN` or `ACCESS_AUD` is wrong or empty (no `https://`, exactly as shown in Zero Trust), or the Access paths do not cover `/api/admin*`. Redeploy after fixing.
-- Sign-in loops or never prompts: the Access application paths must match the domain you are visiting (custom domain vs `pages.dev`), and your email must be in the Allow policy.

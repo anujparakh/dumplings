@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import type { Photo, Spot, SpotInput, SpotStatus } from '../../shared/types';
 import { DumplingRating } from '../components/DumplingRating';
 import { Header } from '../components/Header';
@@ -10,6 +10,7 @@ import { TagEditor } from '../components/TagEditor';
 import { settings } from '../config/settings';
 import { text } from '../config/text';
 import { api, isSignedOut } from '../lib/api';
+import { useEditor } from '../lib/useEditor';
 import { useUserLocation } from '../lib/useUserLocation';
 
 interface Form {
@@ -72,6 +73,8 @@ export function SpotFormPage(): JSX.Element {
   const [params] = useSearchParams();
   const went = params.get('went') === '1';
   const navigate = useNavigate();
+  const here = useLocation();
+  const editor = useEditor();
   const userLocation = useUserLocation();
 
   const [form, setForm] = useState<Form>(blankForm);
@@ -224,6 +227,9 @@ export function SpotFormPage(): JSX.Element {
   const setStatus = (status: SpotStatus): void =>
     setForm((f) => ({ ...f, status, visitedOn: status === 'been' && !f.visitedOn ? today() : f.visitedOn }));
 
+  if (!editor.loading && !editor.signedIn) {
+    return <Navigate to={`/login?next=${encodeURIComponent(here.pathname + here.search)}`} replace />;
+  }
   if (loadState === 'signedOut') {
     return (
       <div className="min-h-dvh bg-surface">

@@ -3,7 +3,7 @@ import { expect, test, vi } from 'vitest';
 import { createApp } from '../../server/app';
 import type { Env } from '../../server/env';
 import { searchPlaces } from '../../server/search';
-import { fakeVerifier } from './helpers';
+import { editorCookie } from './helpers';
 
 const photonEnv = { SEARCH_PROVIDER: 'photon' } as Env;
 const googleEnv = { SEARCH_PROVIDER: 'google', GOOGLE_PLACES_KEY: 'secret-key' } as Env;
@@ -82,9 +82,9 @@ test('SEARCH_PROVIDER=google calls Places Text Search with the key header', asyn
   expect(JSON.parse(String(init?.body)).locationBias).toBeUndefined();
 });
 
+const cookie = await editorCookie();
 const call = (f: typeof fetch, qs: string, e: object = env) =>
-  createApp({ verifyAccessJwt: fakeVerifier('ruchi@example.com'), fetch: f }).request(
-    `/api/admin/search?${qs}`, { headers: { 'Cf-Access-Jwt-Assertion': 'test' } }, e);
+  createApp({ fetch: f }).request(`/api/admin/search?${qs}`, { headers: { Cookie: cookie } }, e);
 
 test('provider HTTP error -> route returns 502 { error: "search_failed" }', async () => {
   const r = await call(stub({}, 500), 'q=dumpling');
@@ -110,7 +110,7 @@ test('route: short q returns []; partial or bad lat/lng ignores bias; requires a
   await call(f, 'q=dumpling&lat=29.7&lng=-95.4');
   expect(new URL(String(f.mock.calls[2][0])).searchParams.get('lon')).toBe('-95.4');
 
-  const anon = await createApp({ verifyAccessJwt: fakeVerifier('x@example.com'), fetch: f })
+  const anon = await createApp({ fetch: f })
     .request('/api/admin/search?q=dumpling', {}, env);
   expect(anon.status).toBe(401);
 });

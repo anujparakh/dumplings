@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { api } from './api';
 
-export function useEditor(): { email: string | null; loading: boolean } {
-  const [state, setState] = useState<{ email: string | null; loading: boolean }>({ email: null, loading: true });
+export function useEditor(): { signedIn: boolean; loading: boolean } {
+  const [state, setState] = useState({ signedIn: false, loading: true });
   useEffect(() => {
     let active = true;
-    api.me().then((m) => {
-      if (active) setState({ email: m?.email ?? null, loading: false });
+    api.isSignedIn().then((signedIn) => {
+      if (active) setState({ signedIn, loading: false });
     });
     return () => {
       active = false;

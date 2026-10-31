@@ -114,7 +114,7 @@ Changing any of the above should not require touching component code.
 - Place search: Photon (OpenStreetMap-based, supports typeahead), behind a provider setting that can switch to Google Places later.
 - Backend: Hono on Cloudflare Pages Functions.
 - Data: Cloudflare D1. Photos: Cloudflare R2.
-- Sign-in: Cloudflare Access (free, one-time email code) guarding only the editing routes and write API; browsing stays public.
+- Sign-in: one shared editor password stored as a Cloudflare secret, guarding only the editing routes and write API; browsing stays public. (Changed 2026-10-31 from Cloudflare Access at the owner's request, for simpler setup. Tradeoff: edits are no longer tied to a person.)
 
 ## Left to the builder
 

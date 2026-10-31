@@ -27,7 +27,7 @@
 - Place search: Photon (OpenStreetMap-based typeahead), behind a provider setting that can switch to Google Places later.
 - Backend: Hono on Cloudflare Pages Functions.
 - Data: Cloudflare D1. Photos: Cloudflare R2 (resized on the phone before upload).
-- Sign-in: Cloudflare Access (one-time email code) guarding only editing routes and the write API.
+- Sign-in: one shared editor password (a Cloudflare secret) that sets a signed cookie, guarding only editing routes and the write API.
 
 ## Out of scope for now
 
@@ -41,7 +41,7 @@
 
 - Design doc: `docs/superpowers/specs/2026-10-30-dumpling-map-design.md` (source of truth for scope and decisions).
 - Implementation plan will live in `docs/superpowers/plans/`.
-- `README.md`: owner-facing guide for running locally, deploying to Cloudflare, setting up Access, and changing text, theme, icons, and settings.
+- `README.md`: owner-facing guide for running locally, deploying to Cloudflare, setting the editor password, and changing text, theme, icons, and settings.
 - Mockups: `.superpowers/brainstorm/*/content/` (`map-and-add-v3.html` is the latest).
 
 ## Commands

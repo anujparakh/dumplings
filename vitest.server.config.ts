@@ -14,7 +14,7 @@ export default defineConfig(async () => {
           r2Buckets: ['PHOTOS'],
           bindings: {
             TEST_MIGRATIONS: migrations,
-            EDITOR_EMAILS: 'ruchi@example.com,owner@example.com',
+            EDITOR_PASSWORD: 'test-password',
           },
         },
       }),

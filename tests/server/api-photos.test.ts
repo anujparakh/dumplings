@@ -2,10 +2,10 @@ import { env } from 'cloudflare:workers';
 import { beforeEach, expect, test } from 'vitest';
 import { createApp } from '../../server/app';
 import { settings } from '../../src/config/settings';
-import { fakeVerifier } from './helpers';
+import { editorCookie } from './helpers';
 
-const app = createApp({ verifyAccessJwt: fakeVerifier('ruchi@example.com') });
-const auth = { 'Cf-Access-Jwt-Assertion': 'test' };
+const app = createApp();
+const auth = { Cookie: await editorCookie() };
 
 const been = { name: 'Golden Steamer', address: '123 Main St', lat: 29.76, lng: -95.37,
   status: 'been', rating: 4, notes: 'Crispy', visitedOn: '2026-10-12', tags: ['Dumplings'] };

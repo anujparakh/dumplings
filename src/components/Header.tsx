@@ -30,10 +30,9 @@ export function Header({ showSignIn = false }: Props): JSX.Element {
       )}
       {open && showSignIn && (
         <nav className="absolute right-2 top-full z-20 mt-1 rounded-card bg-surface py-1 shadow-md">
-          {/* Full page load so Cloudflare Access can intercept /admin and sign the visitor in. */}
-          <a href="/admin" className="block px-4 py-2 text-ink">
+          <Link to="/login" className="block px-4 py-2 text-ink">
             {text.signIn}
-          </a>
+          </Link>
         </nav>
       )}
     </header>
