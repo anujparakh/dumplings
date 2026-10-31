@@ -2,9 +2,13 @@ import { Hono } from 'hono';
 import { requireEditor, verifyAccessJwtWithJose, type AccessVerifier } from './auth';
 import type { Env } from './env';
 import { spotInputSchema } from './validation';
+import { settings } from '../src/config/settings';
 import {
-  createSpot, deleteSpot, getSpot, listSpots, listTags, updateSpot,
+  addPhoto, createSpot, deletePhoto, deleteSpot, getPhotoKey, getSpot, listSpots, listTags, updateSpot,
 } from './db/spots';
+
+const PHOTO_EXT: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
+const positiveInt = (v: string | undefined) => (v !== undefined && /^\d+$/.test(v) && Number(v) > 0 ? Number(v) : null);
 
 export interface AppDeps {
   verifyAccessJwt?: AccessVerifier;
@@ -66,6 +70,57 @@ export function createApp(deps: AppDeps = {}) {
     const keys = await deleteSpot(c.env.DB, c.req.param('id'));
     if (keys === null) return c.json({ error: 'not_found' }, 404);
     if (keys.length) await c.env.PHOTOS.delete(keys);
+    return c.body(null, 204);
+  });
+
+  app.post('/admin/spots/:id/photos', async (c) => {
+    const spotId = c.req.param('id');
+    const spot = await getSpot(c.env.DB, spotId);
+    if (!spot) return c.json({ error: 'not_found' }, 404);
+    if (spot.status === 'want') return c.json({ error: 'want_spot' }, 409);
+
+    const type = (c.req.header('Content-Type') ?? '').split(';')[0].trim().toLowerCase();
+    const ext = PHOTO_EXT[type];
+    const width = positiveInt(c.req.header('X-Photo-Width'));
+    const height = positiveInt(c.req.header('X-Photo-Height'));
+    const issues = [
+      ...(ext ? [] : [{ path: ['Content-Type'], message: 'must be image/jpeg, image/png or image/webp' }]),
+      ...(width ? [] : [{ path: ['X-Photo-Width'], message: 'must be a positive integer' }]),
+      ...(height ? [] : [{ path: ['X-Photo-Height'], message: 'must be a positive integer' }]),
+    ];
+    if (issues.length || !ext || !width || !height) return c.json(invalid(issues), 400);
+
+    const declared = Number(c.req.header('Content-Length'));
+    if (declared > settings.photoMaxBytes) return c.json({ error: 'too_large' }, 413);
+    const data = await c.req.arrayBuffer();
+    if (data.byteLength > settings.photoMaxBytes) return c.json({ error: 'too_large' }, 413);
+
+    const r2Key = `spots/${spotId}/${crypto.randomUUID()}.${ext}`;
+    await c.env.PHOTOS.put(r2Key, data, { httpMetadata: { contentType: type } });
+    try {
+      return c.json(await addPhoto(c.env.DB, spotId, { r2Key, width, height }), 201);
+    } catch (e) {
+      await c.env.PHOTOS.delete(r2Key);
+      throw e;
+    }
+  });
+
+  app.get('/photos/:photoId', async (c) => {
+    const key = await getPhotoKey(c.env.DB, c.req.param('photoId'));
+    const object = key ? await c.env.PHOTOS.get(key) : null;
+    if (!object) return c.json({ error: 'not_found' }, 404);
+    return new Response(object.body, {
+      headers: {
+        'Content-Type': object.httpMetadata?.contentType ?? 'application/octet-stream',
+        'Cache-Control': 'public, max-age=31536000, immutable',
+      },
+    });
+  });
+
+  app.delete('/admin/photos/:photoId', async (c) => {
+    const key = await deletePhoto(c.env.DB, c.req.param('photoId'));
+    if (key === null) return c.json({ error: 'not_found' }, 404);
+    await c.env.PHOTOS.delete(key);
     return c.body(null, 204);
   });
 
