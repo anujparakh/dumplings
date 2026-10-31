@@ -7,8 +7,8 @@ import { SpotCard } from '../components/SpotCard';
 import { SpotDrawer } from '../components/SpotDrawer';
 import { text } from '../config/text';
 import { api } from '../lib/api';
-import type { LatLng } from '../lib/geo';
 import { useEditor } from '../lib/useEditor';
+import { useUserLocation } from '../lib/useUserLocation';
 
 // Lazy so maplibre (WebGL) only loads in the browser on the map view, never in tests.
 const MapView = lazy(() => import('../components/MapView'));
@@ -43,17 +43,6 @@ function useHomeQuery() {
     setShowWant: (on: boolean) => set('want', on ? null : '0'),
     setTag: (t: string | null) => set('tag', t),
   };
-}
-
-function useUserLocation(): LatLng | null {
-  const [loc, setLoc] = useState<LatLng | null>(null);
-  useEffect(() => {
-    navigator.geolocation?.getCurrentPosition(
-      (p) => setLoc({ lat: p.coords.latitude, lng: p.coords.longitude }),
-      () => setLoc(null),
-    );
-  }, []);
-  return loc;
 }
 
 export function HomePage(): JSX.Element {
