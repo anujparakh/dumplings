@@ -34,6 +34,14 @@ export const text = {
     collapse: 'Show fewer spots',
     count: (n: number): string => `${n} ${n === 1 ? 'spot' : 'spots'}`,
   },
+  map: {
+    youAreHere: 'You are here',
+  },
+  pinCard: {
+    details: 'See details',
+    close: 'Close',
+    closeSymbol: '\u2715',
+  },
   empty: {
     noSpots: 'No spots yet.',
     noMatches: 'No spots match these filters.',

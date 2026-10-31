@@ -22,8 +22,10 @@ export const settings = {
   pinZoom: 17,
   // Days a sign-in lasts on a device before the password is asked for again.
   signInDays: 90,
+  // Directions open Apple Maps on iPhone/iPad and Google Maps everywhere else (see src/lib/directions.ts).
   directionsUrl: (lat: number, lng: number): string =>
     `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`,
+  appleDirectionsUrl: (lat: number, lng: number): string => `https://maps.apple.com/?daddr=${lat},${lng}`,
   // Indexing is blocked in three places: the <meta name="robots"> tag in index.html,
   // the X-Robots-Tag header in public/_headers, and Disallow in public/robots.txt.
   allowIndexing: false,

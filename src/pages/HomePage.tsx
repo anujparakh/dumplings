@@ -1,13 +1,15 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import type { SpotSummary } from '../../shared/types';
 import { EmptyState } from '../components/EmptyState';
 import { FilterBar } from '../components/FilterBar';
 import { Header } from '../components/Header';
 import { SpotCard } from '../components/SpotCard';
 import { SpotDrawer } from '../components/SpotDrawer';
+import { SpotPreview } from '../components/SpotPreview';
 import { text } from '../config/text';
 import { api } from '../lib/api';
+import { distanceMiles, formatDistance } from '../lib/geo';
 import { useEditor } from '../lib/useEditor';
 import { useUserLocation } from '../lib/useUserLocation';
 
@@ -50,12 +52,13 @@ export function HomePage(): JSX.Element {
   const q = useHomeQuery();
   const { signedIn, loading } = useEditor();
   const userLocation = useUserLocation();
-  const navigate = useNavigate();
   const [all, setAll] = useState<SpotSummary[] | null>(null);
   // The tag `all` was loaded for. The map refits when this changes, i.e. once the new tag's spots arrive.
   const [loadedTag, setLoadedTag] = useState('');
   const [failed, setFailed] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
+  // The pin she tapped; its preview card replaces the drawer until closed.
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
     api.listTags().then(setTags, () => setTags([]));
@@ -85,6 +88,8 @@ export function HomePage(): JSX.Element {
     () => (all ?? []).filter((s) => (s.status === 'been' ? q.showBeen : q.showWant)),
     [all, q.showBeen, q.showWant],
   );
+  // A filter can hide the tapped spot, which closes its card.
+  const selected = spots.find((s) => s.id === selectedId) ?? null;
   // Nothing to say while the first load is in flight.
   // With a tag picked or a chip off, an empty list means the filters hide everything, not "no spots yet".
   const filtered = q.tag !== null || !q.showBeen || !q.showWant;
@@ -155,11 +160,25 @@ export function HomePage(): JSX.Element {
     <div className="relative h-dvh overflow-hidden bg-surface-muted">
       <div className="absolute inset-0">
         <Suspense fallback={null}>
-          <MapView spots={spots} fitKey={loadedTag} onSelect={(id) => navigate(`/spot/${id}`)} />
+          <MapView
+            spots={spots}
+            fitKey={loadedTag}
+            userLocation={userLocation}
+            onSelect={setSelectedId}
+            onMapTap={() => setSelectedId(null)}
+          />
         </Suspense>
       </div>
       <div className="absolute inset-x-0 top-0 z-10">{top}</div>
-      <SpotDrawer spots={spots} userLocation={userLocation} emptyMessage={emptyMessage} action={addButton} />
+      {selected ? (
+        <SpotPreview
+          spot={selected}
+          distance={userLocation ? formatDistance(distanceMiles(userLocation, selected)) : undefined}
+          onClose={() => setSelectedId(null)}
+        />
+      ) : (
+        <SpotDrawer spots={spots} userLocation={userLocation} emptyMessage={emptyMessage} action={addButton} />
+      )}
     </div>
   );
 }

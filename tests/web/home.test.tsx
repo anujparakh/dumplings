@@ -12,7 +12,19 @@ vi.mock('../../src/lib/api', () => ({
 }));
 
 vi.mock('../../src/components/MapView', () => ({
-  default: ({ spots }: { spots: SpotSummary[] }) => <div data-testid="map">{spots.length}</div>,
+  default: ({ spots, onSelect, onMapTap }: { spots: SpotSummary[]; onSelect: (id: string) => void; onMapTap: () => void }) => (
+    <div data-testid="map">
+      {spots.length}
+      {spots.map((s) => (
+        <button key={s.id} type="button" onClick={() => onSelect(s.id)}>
+          {`pin ${s.name}`}
+        </button>
+      ))}
+      <button type="button" onClick={onMapTap}>
+        empty map
+      </button>
+    </div>
+  ),
 }));
 
 const mocked = vi.mocked(api);
@@ -199,4 +211,21 @@ test('a tag with no spots: shows text.empty.noMatches', async () => {
   mocked.listSpots.mockResolvedValue([]);
   renderHome('/?view=feed&tag=Momos');
   expect(await screen.findByText(text.empty.noMatches)).toBeInTheDocument();
+});
+
+test('tapping a pin shows its card with directions; closing brings back the list', async () => {
+  renderHome('/');
+  fireEvent.click(await screen.findByRole('button', { name: 'pin Momo House' }));
+  const card = screen.getByRole('region', { name: 'Momo House' });
+  expect(within(card).getByRole('link', { name: text.spot.directions }).getAttribute('href')).toContain('29.76');
+  expect(within(card).getByRole('link', { name: text.pinCard.details })).toHaveAttribute('href', '/spot/m1');
+  expect(screen.queryByRole('button', { name: text.drawer.expand })).not.toBeInTheDocument();
+
+  fireEvent.click(within(card).getByRole('button', { name: text.pinCard.close }));
+  expect(screen.queryByRole('region', { name: 'Momo House' })).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: text.drawer.expand })).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('button', { name: 'pin Golden Steamer' }));
+  fireEvent.click(screen.getByRole('button', { name: 'empty map' }));
+  expect(screen.queryByRole('region', { name: 'Golden Steamer' })).not.toBeInTheDocument();
 });

@@ -5,6 +5,7 @@ import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import type { SpotSummary } from '../../shared/types';
 import { icons } from '../config/icons';
 import { settings } from '../config/settings';
+import { text } from '../config/text';
 import type { LatLng } from '../lib/geo';
 
 interface Props {
@@ -18,6 +19,8 @@ interface Props {
   zoom?: number;
   /** The map fits to the spots on the first non-empty load and again whenever this changes. */
   fitKey?: string;
+  /** Shown as a blue dot. */
+  userLocation?: LatLng | null;
 }
 
 // maplibre-gl v6 loads its worker from a file beside its own script, which bundling breaks,
@@ -49,7 +52,7 @@ function pinElement(src: string, label?: string): HTMLElement {
 }
 
 // Default export so HomePage can React.lazy() it and tests never load maplibre (WebGL).
-export default function MapView({ spots, onSelect, onMapTap, marker, center, zoom, fitKey }: Props): JSX.Element {
+export default function MapView({ spots, onSelect, onMapTap, marker, center, zoom, fitKey, userLocation }: Props): JSX.Element {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   // Keep the latest callbacks without re-creating the map or markers.
@@ -115,6 +118,21 @@ export default function MapView({ spots, onSelect, onMapTap, marker, center, zoo
       mk.remove();
     };
   }, [lat, lng]);
+
+  const userLat = userLocation?.lat;
+  const userLng = userLocation?.lng;
+  useEffect(() => {
+    const m = map.current;
+    if (!m || userLat === undefined || userLng === undefined) return;
+    const dot = document.createElement('div');
+    dot.setAttribute('role', 'img');
+    dot.setAttribute('aria-label', text.map.youAreHere);
+    dot.className = 'h-4 w-4 rounded-full border-2 border-surface bg-user-location shadow-md ring-8 ring-user-location/20';
+    const mk = new maplibregl.Marker({ element: dot }).setLngLat([userLng, userLat]).addTo(m);
+    return () => {
+      mk.remove();
+    };
+  }, [userLat, userLng]);
 
   return <div ref={container} className="group h-full w-full" />;
 }
