@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import type { SpotSummary } from '../../shared/types';
 import { icons } from '../config/icons';
 import { settings } from '../config/settings';
@@ -18,6 +19,10 @@ interface Props {
   /** The map fits to the spots on the first non-empty load and again whenever this changes. */
   fitKey?: string;
 }
+
+// maplibre-gl v6 loads its worker from a file beside its own script, which bundling breaks,
+// so ship the worker as an asset and point maplibre at it.
+maplibregl.setWorkerUrl(maplibreWorkerUrl);
 
 function pinElement(src: string, label?: string): HTMLElement {
   const el = document.createElement(label ? 'button' : 'div');
