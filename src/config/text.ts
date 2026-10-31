@@ -16,5 +16,13 @@ export const text = {
     defaultDescription: 'Ruchi\'s favorite dumpling spots, mapped.',
     wantToGo: 'On the list to try.',
   },
+  rating: {
+    setLabel: (n: number): string => `Rate ${n} out of 5`,
+    valueLabel: (value: number | null): string =>
+      value === null ? 'Not rated' : `Rated ${value} out of 5`,
+  },
+  units: {
+    miles: 'mi',
+  },
   notFound: "We couldn't find that spot.",
 } as const;
