@@ -7,6 +7,10 @@ export const settings = {
   defaultTags: ['Dumplings', 'Fully veg menu'],
   newSpotTags: ['Dumplings'],
   mapStyleUrl: 'https://tiles.openfreemap.org/styles/liberty',
+  // When fitting the map to spots: never zoom in past this, and keep pins clear of the
+  // floating header (top) and the spot drawer (bottom). Values are pixels.
+  mapFitMaxZoom: 14,
+  mapFitPadding: { top: 140, bottom: 260, left: 40, right: 40 },
   photoMaxEdge: 1600,
   photoQuality: 0.82,
   photoMaxBytes: 5_000_000,

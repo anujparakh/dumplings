@@ -1,14 +1,35 @@
+import { useState } from 'react';
 import { icons } from '../config/icons';
 import { text } from '../config/text';
 
-export function Header(): JSX.Element {
+interface Props {
+  /** Show the sign-in link in the menu (signed-out visitors). */
+  showSignIn?: boolean;
+}
+
+export function Header({ showSignIn = false }: Props): JSX.Element {
+  const [open, setOpen] = useState(false);
   return (
-    <header className="flex items-center gap-2 bg-surface px-4 py-3 shadow-sm">
+    <header className="relative flex items-center gap-2 bg-surface px-4 py-3 shadow-sm">
       <img src={icons.logo} alt="" className="h-7 w-7" />
       <h1 className="flex-1 text-lg font-bold text-ink">{text.appTitle}</h1>
-      <button type="button" aria-label={text.menu} className="rounded-card px-2 py-1 text-ink-muted">
+      <button
+        type="button"
+        aria-label={text.menu}
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        className="rounded-card px-2 py-1 text-ink-muted"
+      >
         <span aria-hidden="true">&#9776;</span>
       </button>
+      {open && showSignIn && (
+        <nav className="absolute right-2 top-full z-20 mt-1 rounded-card bg-surface py-1 shadow-md">
+          {/* Full page load so Cloudflare Access can intercept /admin and sign the visitor in. */}
+          <a href="/admin" className="block px-4 py-2 text-ink">
+            {text.signIn}
+          </a>
+        </nav>
+      )}
     </header>
   );
 }

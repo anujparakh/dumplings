@@ -3,6 +3,7 @@ export const icons = {
   rating: '/icons/dumpling.svg',
   pinBeen: '/icons/pin-been.svg',
   pinWant: '/icons/pin-want.svg',
+  pinPicked: '/icons/pin-been.svg',
   logo: '/icons/dumpling.svg',
   tags: {} as Record<string, string>,
 };
