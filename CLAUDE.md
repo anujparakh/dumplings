@@ -41,9 +41,12 @@
 
 - Design doc: `docs/superpowers/specs/2026-10-30-dumpling-map-design.md` (source of truth for scope and decisions).
 - Implementation plan will live in `docs/superpowers/plans/`.
+- `README.md`: owner-facing guide for running locally, deploying to Cloudflare, setting up Access, and changing text, theme, icons, and settings.
 - Mockups: `.superpowers/brainstorm/*/content/` (`map-and-add-v3.html` is the latest).
 
 ## Commands
+
+See `README.md` for the full local-run and deploy steps (wrangler needs Node 22+).
 
 - `npm run dev`: Vite dev server (proxies `/api` and `/spot` to `http://localhost:8788`).
 - `npm run dev:api`: `wrangler pages dev dist --port 8788` (run `npm run build` first).
