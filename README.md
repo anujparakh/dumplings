@@ -164,15 +164,7 @@ Allow search engines: the site is hidden by default. Set `allowIndexing: true` i
 
 ## Switching place search to Google
 
-Place search uses Photon (free, no key) by default. To use Google Places:
-
-1. In Google Cloud, create a project, enable billing, and enable "Places API (New)". Create an API key.
-2. Set a budget alert (Billing > Budgets and alerts) and a daily quota cap for the Places API (APIs and services > Places API (New) > Quotas) so a bug or abuse cannot run up a bill.
-3. Store the key as a secret:
-   ```bash
-   npx wrangler pages secret put GOOGLE_PLACES_KEY
-   ```
-4. In `wrangler.toml`, change `SEARCH_PROVIDER = "photon"` to `SEARCH_PROVIDER = "google"` and redeploy.
+Place search uses Photon (free, no key) by default. To switch to Google Places, follow [docs/switch-to-google.md](docs/switch-to-google.md).
 
 ## Troubleshooting
 
