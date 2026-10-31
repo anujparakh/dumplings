@@ -71,7 +71,7 @@ export function SpotFormPage(): JSX.Element {
   const [params] = useSearchParams();
   const went = params.get('went') === '1';
   const navigate = useNavigate();
-  const near = useUserLocation() ?? settings.defaultCenter;
+  const userLocation = useUserLocation();
 
   const [form, setForm] = useState<Form>(blankForm);
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'notFound' | 'failed'>(id ? 'loading' : 'ready');
@@ -237,7 +237,7 @@ export function SpotFormPage(): JSX.Element {
         <PlaceSearch
           name={form.name}
           onNameChange={(name) => set('name', name)}
-          near={near}
+          userLocation={userLocation}
           place={form.lat !== null && form.lng !== null ? { address: form.address, lat: form.lat, lng: form.lng } : null}
           onPick={(p) => setForm((f) => ({ ...f, name: p.name, address: p.address, lat: p.lat, lng: p.lng }))}
           onPin={(p) => setForm((f) => ({ ...f, address: null, lat: p.lat, lng: p.lng }))}

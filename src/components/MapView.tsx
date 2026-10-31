@@ -12,6 +12,9 @@ interface Props {
   onMapTap?: (p: LatLng) => void;
   /** A single picked point (used by "drop a pin" when adding a spot). */
   marker?: LatLng | null;
+  /** Initial camera; defaults to settings.defaultCenter and settings.defaultZoom. */
+  center?: LatLng;
+  zoom?: number;
 }
 
 function pinElement(src: string, label?: string): HTMLElement {
@@ -30,7 +33,7 @@ function pinElement(src: string, label?: string): HTMLElement {
 }
 
 // Default export so HomePage can React.lazy() it and tests never load maplibre (WebGL).
-export default function MapView({ spots, onSelect, onMapTap, marker }: Props): JSX.Element {
+export default function MapView({ spots, onSelect, onMapTap, marker, center, zoom }: Props): JSX.Element {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   // Keep the latest callbacks without re-creating the map or markers.
@@ -41,8 +44,8 @@ export default function MapView({ spots, onSelect, onMapTap, marker }: Props): J
     const m = new maplibregl.Map({
       container: container.current!,
       style: settings.mapStyleUrl,
-      center: [settings.defaultCenter.lng, settings.defaultCenter.lat],
-      zoom: settings.defaultZoom,
+      center: [(center ?? settings.defaultCenter).lng, (center ?? settings.defaultCenter).lat],
+      zoom: zoom ?? settings.defaultZoom,
       attributionControl: { compact: true },
     });
     m.on('click', (e) => handlers.current.onMapTap?.({ lat: e.lngLat.lat, lng: e.lngLat.lng }));
@@ -51,6 +54,7 @@ export default function MapView({ spots, onSelect, onMapTap, marker }: Props): J
       m.remove();
       map.current = null;
     };
+    // center and zoom only set the initial camera.
   }, []);
 
   useEffect(() => {

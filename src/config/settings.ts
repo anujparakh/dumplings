@@ -16,6 +16,8 @@ export const settings = {
   photoMaxBytes: 5_000_000,
   searchMinChars: 3,
   searchDebounceMs: 300,
+  // Street-level zoom for the "drop a pin" map when it opens at a known place or her location.
+  pinZoom: 17,
   // Indexing is blocked in three places: the <meta name="robots"> tag in index.html,
   // the X-Robots-Tag header in public/_headers, and Disallow in public/robots.txt.
   allowIndexing: false,

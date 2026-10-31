@@ -31,10 +31,13 @@ vi.mock('../../src/lib/image', async (importOriginal) => ({
   resizeImage: vi.fn(),
 }));
 
+type MapProps = { onMapTap?: (p: { lat: number; lng: number }) => void; center?: unknown; zoom?: number };
+const mapProps = vi.hoisted(() => ({ last: null as unknown }));
 vi.mock('../../src/components/MapView', () => ({
-  default: ({ onMapTap }: { onMapTap?: (p: { lat: number; lng: number }) => void }) => (
-    <button type="button" data-testid="map" onClick={() => onMapTap?.({ lat: 29.7, lng: -95.4 })} />
-  ),
+  default: (props: MapProps) => {
+    mapProps.last = props;
+    return <button type="button" data-testid="map" onClick={() => props.onMapTap?.({ lat: 29.7, lng: -95.4 })} />;
+  },
 }));
 
 const mocked = vi.mocked(api);
@@ -325,4 +328,36 @@ test('delete asks for confirmation, then deletes and goes home', async () => {
   expect(confirm).toHaveBeenCalledWith(text.form.confirmDelete);
   await waitFor(() => expect(location()).toHaveTextContent(/^\/$/));
   expect(mocked.deleteSpot).toHaveBeenCalledWith('g1');
+});
+
+describe('pin map camera', () => {
+  async function openPinMap(): Promise<MapProps> {
+    fireEvent.click(screen.getByRole('button', { name: text.form.dropPin }));
+    await screen.findByTestId('map');
+    return mapProps.last as MapProps;
+  }
+
+  test('opens at the existing place, street level', async () => {
+    mocked.getSpot.mockResolvedValue(spot({ lat: 30.1, lng: -95.9 }));
+    renderAt('/admin/spot/g1/edit');
+    await screen.findByLabelText(text.form.name);
+    expect(await openPinMap()).toMatchObject({ center: { lat: 30.1, lng: -95.9 }, zoom: settings.pinZoom });
+  });
+
+  test("opens at the user's location when no place is picked", async () => {
+    vi.stubGlobal('navigator', {
+      ...navigator,
+      geolocation: {
+        getCurrentPosition: (ok: PositionCallback) =>
+          ok({ coords: { latitude: 29.71, longitude: -95.41 } } as GeolocationPosition),
+      },
+    });
+    renderAt('/admin/new');
+    expect(await openPinMap()).toMatchObject({ center: { lat: 29.71, lng: -95.41 }, zoom: settings.pinZoom });
+  });
+
+  test('falls back to the default view with neither', async () => {
+    renderAt('/admin/new');
+    expect(await openPinMap()).toMatchObject({ center: settings.defaultCenter, zoom: settings.defaultZoom });
+  });
 });
