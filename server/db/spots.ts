@@ -33,7 +33,7 @@ export async function listSpots(db: D1Database, filter: SpotFilter): Promise<Spo
     ORDER BY COALESCE(visited_on, created_at) DESC, created_at DESC`;
   const [spots, tags, photos] = await db.batch([
     db.prepare(sql).bind(...args),
-    db.prepare('SELECT spot_id, tag FROM spot_tags ORDER BY tag'),
+    db.prepare('SELECT spot_id, tag FROM spot_tags ORDER BY tag COLLATE NOCASE'),
     db.prepare('SELECT id, spot_id, width, height FROM photos ORDER BY position'),
   ]);
   const tagsBySpot = new Map<string, string[]>();
@@ -51,7 +51,7 @@ export async function listSpots(db: D1Database, filter: SpotFilter): Promise<Spo
 export async function getSpot(db: D1Database, id: string): Promise<Spot | null> {
   const [spot, tags, photos] = await db.batch([
     db.prepare('SELECT * FROM spots WHERE id = ?').bind(id),
-    db.prepare('SELECT tag FROM spot_tags WHERE spot_id = ? ORDER BY tag').bind(id),
+    db.prepare('SELECT tag FROM spot_tags WHERE spot_id = ? ORDER BY tag COLLATE NOCASE').bind(id),
     db.prepare('SELECT id, spot_id, width, height FROM photos WHERE spot_id = ? ORDER BY position').bind(id),
   ]);
   const row = (spot.results as unknown as SpotRow[])[0];
@@ -99,7 +99,7 @@ export async function deleteSpot(db: D1Database, id: string): Promise<string[] |
 }
 
 export async function listTags(db: D1Database): Promise<string[]> {
-  const { results } = await db.prepare('SELECT DISTINCT tag FROM spot_tags ORDER BY tag').all<{ tag: string }>();
+  const { results } = await db.prepare('SELECT DISTINCT tag FROM spot_tags ORDER BY tag COLLATE NOCASE').all<{ tag: string }>();
   return results.map((r) => r.tag);
 }
 
