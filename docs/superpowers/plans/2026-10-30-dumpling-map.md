@@ -27,7 +27,7 @@
 - Default map center Houston `{ lat: 29.7604, lng: -95.3698 }`, zoom `11`; distances in miles.
 - Hidden from search engines: `noindex` via meta tag, `X-Robots-Tag` header, and `robots.txt`, controlled by `settings.allowIndexing = false`.
 - Writes require a working connection. No offline drafts or service worker.
-- Owner preference: **do not create git commits, branches, or worktrees.** Leave changes in the working tree. Never use em-dash or other Unicode dashes in code, comments, or docs.
+- Commit each task on `main` with a conventional message ending in `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. Do not create branches or worktrees. Never use em-dash or other Unicode dashes in code, comments, or docs.
 
 ## Review Focus
 
