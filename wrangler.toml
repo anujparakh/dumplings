@@ -7,7 +7,7 @@ compatibility_flags = ["nodejs_compat"]
 binding = "DB"
 database_name = "dumplings"
 # Replace with the id printed by `wrangler d1 create dumplings` at deploy time.
-database_id = "REPLACE_WITH_D1_ID"
+database_id = "2a4b76fc-f6d3-4829-ba6c-9e2b670b0a8a"
 
 [[r2_buckets]]
 binding = "PHOTOS"
