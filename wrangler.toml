@@ -1,0 +1,20 @@
+name = "dumplings"
+pages_build_output_dir = "dist"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "dumplings"
+# Replace with the id printed by `wrangler d1 create dumplings` at deploy time.
+database_id = "REPLACE_WITH_D1_ID"
+
+[[r2_buckets]]
+binding = "PHOTOS"
+bucket_name = "dumplings-photos"
+
+[vars]
+SEARCH_PROVIDER = "photon"
+EDITOR_EMAILS = ""
+ACCESS_TEAM_DOMAIN = ""
+ACCESS_AUD = ""

@@ -45,4 +45,10 @@
 
 ## Commands
 
-No code exists yet. Build, dev, and test commands will be added here once the project is scaffolded.
+- `npm run dev`: Vite dev server (proxies `/api` and `/spot` to `http://localhost:8788`).
+- `npm run dev:api`: `wrangler pages dev dist --port 8788` (run `npm run build` first).
+- `npm run build`: type-check and build to `dist/`.
+- `npm run test:web`: frontend tests (Vitest + jsdom).
+- `npm run test:server`: Pages Functions tests (config added with the server tasks).
+- `npm test`: both test suites.
+- `npm run db:migrate:local`: apply D1 migrations locally.
