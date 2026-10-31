@@ -44,6 +44,11 @@ test('photon feature without street/city -> address null', async () => {
   expect(r.address).toBeNull();
 });
 
+test('photon features with an empty name are dropped', async () => {
+  const f = stub({ features: [feature({ name: '' }), feature({ street: 'Main St' }), feature({ name: 'Golden Steamer' })] });
+  expect((await searchPlaces('golden', null, photonEnv, f)).map((r) => r.name)).toEqual(['Golden Steamer']);
+});
+
 test('lat/lng passed through as location bias', async () => {
   const f = stub({ features: [] });
   await searchPlaces('dumpling', { lat: 29.7, lng: -95.4 }, photonEnv, f);

@@ -32,11 +32,15 @@ export function createApp(deps: AppDeps = {}) {
     const near = Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
     try {
       return c.json(await searchPlaces(c.req.query('q') ?? '', near, c.env, fetchFn));
-    } catch {
+    } catch (e) {
+      // Log only the message: the error never includes the Google key, but the request might.
+      console.error('search failed', e instanceof Error ? e.message : e);
       return c.json({ error: 'search_failed' }, 502);
     }
   });
 
+  const isJson = (req: Request): boolean =>
+    (req.headers.get('Content-Type') ?? '').split(';')[0].trim().toLowerCase() === 'application/json';
   const parseInput = async (req: Request) => {
     let body: unknown;
     try {
@@ -64,12 +68,16 @@ export function createApp(deps: AppDeps = {}) {
   app.get('/tags', async (c) => c.json(await listTags(c.env.DB)));
 
   app.post('/admin/spots', async (c) => {
+    // Only JSON is accepted, so a plain cross-site form post cannot reach the write API.
+    if (!isJson(c.req.raw)) return c.json({ error: 'unsupported_media_type' }, 415);
     const parsed = await parseInput(c.req.raw);
     if (!parsed.success) return c.json(invalid(parsed.error.issues), 400);
     return c.json(await createSpot(c.env.DB, parsed.data), 201);
   });
 
   app.put('/admin/spots/:id', async (c) => {
+    // Only JSON is accepted, so a plain cross-site form post cannot reach the write API.
+    if (!isJson(c.req.raw)) return c.json({ error: 'unsupported_media_type' }, 415);
     const parsed = await parseInput(c.req.raw);
     if (!parsed.success) return c.json(invalid(parsed.error.issues), 400);
     const id = c.req.param('id');

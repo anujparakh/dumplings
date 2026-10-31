@@ -20,7 +20,7 @@ export async function photonSearch(q: string, near: Near, fetchFn: typeof fetch)
   const data = (await res.json()) as {
     features?: { geometry: { coordinates: [number, number] }; properties: Record<string, string | undefined> }[];
   };
-  return (data.features ?? []).map(({ geometry, properties: p }) => {
+  return (data.features ?? []).filter((f) => f.properties.name?.trim()).map(({ geometry, properties: p }) => {
     const street = [p.housenumber, p.street].filter(Boolean).join(' ');
     const address = [street, p.city, p.state].filter(Boolean).join(', ');
     return {

@@ -1,7 +1,7 @@
 import { env } from 'cloudflare:workers';
 import { beforeEach, expect, test } from 'vitest';
 import { createApp } from '../../server/app';
-import { addPhoto } from '../../server/db/spots';
+import { addPhoto, listSpots } from '../../server/db/spots';
 import { fakeVerifier } from './helpers';
 
 const app = createApp({ verifyAccessJwt: fakeVerifier('ruchi@example.com') });
@@ -157,4 +157,24 @@ test('GET /api/tags lists distinct tags', async () => {
   await post('/api/admin/spots', been);
   await post('/api/admin/spots', { ...want, tags: ['Dumplings', 'Zed'] });
   expect(await (await app.request('/api/tags', {}, env)).json()).toEqual(['Dumplings', 'Zed']);
+});
+
+test('POST and PUT without a JSON Content-Type -> 415', async () => {
+  const form = { 'Cf-Access-Jwt-Assertion': 'test', 'Content-Type': 'text/plain' };
+  const r = await app.request('/api/admin/spots', { method: 'POST', headers: form, body: JSON.stringify(been) }, env);
+  expect(r.status).toBe(415);
+  expect(await r.json()).toEqual({ error: 'unsupported_media_type' });
+  const created = (await (await post('/api/admin/spots', been)).json()) as { id: string };
+  const u = await app.request(`/api/admin/spots/${created.id}`, { method: 'PUT', headers: form, body: JSON.stringify(been) }, env);
+  expect(u.status).toBe(415);
+  expect((await listSpots(env.DB, {})).length).toBe(1);
+});
+
+test('Content-Type with a charset is still accepted', async () => {
+  const r = await app.request('/api/admin/spots', {
+    method: 'POST',
+    headers: { 'Cf-Access-Jwt-Assertion': 'test', 'Content-Type': 'application/json; charset=utf-8' },
+    body: JSON.stringify(been),
+  }, env);
+  expect(r.status).toBe(201);
 });

@@ -19,6 +19,7 @@ export const verifyAccessJwtWithJose: AccessVerifier = async (token, env) => {
   const { payload } = await jwtVerify(token, getJwks(env.ACCESS_TEAM_DOMAIN), {
     audience: env.ACCESS_AUD,
     issuer: `https://${env.ACCESS_TEAM_DOMAIN}`,
+    algorithms: ['RS256'],
   });
   if (typeof payload.email !== 'string' || !payload.email) throw new Error('token has no email');
   return { email: payload.email };
@@ -37,7 +38,9 @@ export const requireEditor =
   (verify: AccessVerifier): MiddlewareHandler<{ Bindings: Env; Variables: { editorEmail: string } }> =>
   async (c, next) => {
     let email: string;
-    if (c.env.DEV_AUTH_EMAIL) {
+    // The local bypass only applies when Access is not configured, so a stray DEV_AUTH_EMAIL
+    // in production can never skip the JWT check.
+    if (c.env.DEV_AUTH_EMAIL && !c.env.ACCESS_TEAM_DOMAIN) {
       email = c.env.DEV_AUTH_EMAIL;
     } else {
       const token = c.req.header('Cf-Access-Jwt-Assertion');

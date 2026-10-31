@@ -35,6 +35,12 @@ test('want spot uses wantToGo and no rating', () => {
   expect(html).not.toContain('og:image');
 });
 
+test('notes snippet never cuts an emoji in half', () => {
+  const html = buildPreviewTags({ ...spot, notes: 'a'.repeat(149) + '🥟🥟' }, o);
+  expect(html).toContain(`${'a'.repeat(149)}🥟"`);
+  expect(html).not.toContain('\uD83E"');
+});
+
 test('null spot uses defaults and no og:image', () => {
   const html = buildPreviewTags(null, o);
   expect(html).toContain('content="Ruchi&#39;s Dumpling Map"');

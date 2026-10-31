@@ -83,3 +83,8 @@ test('listTags is distinct and sorted', async () => {
   await createSpot(env.DB, been); await createSpot(env.DB, want);
   expect(await listTags(env.DB)).toEqual(['Dumplings', 'Fully veg menu']);
 });
+
+test('listSpots tag filter ignores case', async () => {
+  await createSpot(env.DB, been);
+  expect((await listSpots(env.DB, { tag: 'dumplings' })).map(s => s.name)).toEqual(['Golden Steamer']);
+});

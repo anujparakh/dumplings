@@ -52,3 +52,13 @@ test('DEV_AUTH_EMAIL bypasses JWT but still enforces allowlist', async () => {
   const denied = await app.request('/api/admin/me', {}, { ...env, DEV_AUTH_EMAIL: 'nope@example.com' });
   expect(denied.status).toBe(403);
 });
+
+test('DEV_AUTH_EMAIL is ignored when ACCESS_TEAM_DOMAIN is set', async () => {
+  const app = createApp({ verifyAccessJwt: fakeVerifier('ruchi@example.com') });
+  const res = await app.request(
+    '/api/admin/me',
+    {},
+    { ...env, DEV_AUTH_EMAIL: 'ruchi@example.com', ACCESS_TEAM_DOMAIN: 'team.cloudflareaccess.com' },
+  );
+  expect(res.status).toBe(401);
+});

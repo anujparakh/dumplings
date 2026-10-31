@@ -28,7 +28,7 @@ export async function listSpots(db: D1Database, filter: SpotFilter): Promise<Spo
   const where: string[] = [];
   const args: string[] = [];
   if (filter.status) { where.push('status = ?'); args.push(filter.status); }
-  if (filter.tag) { where.push('id IN (SELECT spot_id FROM spot_tags WHERE tag = ?)'); args.push(filter.tag); }
+  if (filter.tag) { where.push('id IN (SELECT spot_id FROM spot_tags WHERE tag = ? COLLATE NOCASE)'); args.push(filter.tag); }
   const sql = `SELECT * FROM spots ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
     ORDER BY COALESCE(visited_on, created_at) DESC, created_at DESC`;
   const [spots, tags, photos] = await db.batch([

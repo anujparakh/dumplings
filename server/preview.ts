@@ -18,7 +18,8 @@ export const previewTitle = (spot: Spot | null): string =>
 
 function previewDescription(spot: Spot | null): string {
   if (!spot) return text.preview.defaultDescription;
-  const notes = spot.notes.slice(0, NOTES_SNIPPET_LENGTH);
+  // Array.from splits by code point so an emoji is never cut in half.
+  const notes = Array.from(spot.notes).slice(0, NOTES_SNIPPET_LENGTH).join('');
   const lead = spot.status === 'been'
     ? `${'🥟'.repeat(spot.rating ?? 0)} ${spot.rating ?? 0}/${settings.ratingMax}`
     : text.preview.wantToGo;
