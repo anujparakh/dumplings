@@ -48,7 +48,7 @@
 
 See `README.md` for the full local-run and deploy steps (wrangler needs Node 22+).
 
-- `npm run dev`: Vite dev server (proxies `/api` and `/spot` to `http://localhost:8788`).
+- `npm run dev`: Vite dev server (proxies `/api` to `http://localhost:8788`). Link previews (`/spot/:id` meta tags) are tested on :8788 directly.
 - `npm run dev:api`: `wrangler pages dev dist --port 8788` (run `npm run build` first).
 - `npm run build`: type-check and build to `dist/`.
 - `npm run test:web`: frontend tests (Vitest + jsdom).

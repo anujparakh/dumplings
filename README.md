@@ -6,7 +6,7 @@ Stack: React + Vite + Tailwind, MapLibre (OpenFreeMap tiles), Hono on Cloudflare
 
 ## Prerequisites
 
-- Node 22 or newer (wrangler requires it; Node 20 fails with "Wrangler requires at least Node.js v22.0.0") and npm.
+- Node 22 or newer (wrangler requires it; Node 20 fails with "Wrangler requires at least Node.js v22.0.0") and npm. The repo has an `.nvmrc`, so with nvm just run `nvm use` (or `nvm install` the first time) in the project folder.
 - A Cloudflare account with your domain on it (only needed to deploy).
 - For deploying: `npx wrangler login` (opens a browser to authorize wrangler).
 
@@ -20,7 +20,7 @@ Stack: React + Vite + Tailwind, MapLibre (OpenFreeMap tiles), Hono on Cloudflare
    ```bash
    cp .dev.vars.example .dev.vars
    ```
-   `DEV_AUTH_EMAIL` makes the API treat every request as that person, so you can add and edit spots locally without Cloudflare Access. It must be one of the `EDITOR_EMAILS`. Never set `DEV_AUTH_EMAIL` in production (it would let anyone edit). `.dev.vars` is gitignored.
+   `DEV_AUTH_EMAIL` makes the API treat every request as that person, so you can add and edit spots locally without Cloudflare Access. It must be one of the `EDITOR_EMAILS`. The empty `ACCESS_TEAM_DOMAIN=` line overrides the `wrangler.toml` value locally: the API only honors `DEV_AUTH_EMAIL` when `ACCESS_TEAM_DOMAIN` is empty, so once Access is configured in production a stray `DEV_AUTH_EMAIL` is ignored. Still, never set `DEV_AUTH_EMAIL` in production. `.dev.vars` is gitignored.
 3. Create the local database and apply migrations:
    ```bash
    npm run db:migrate:local
@@ -31,12 +31,12 @@ Stack: React + Vite + Tailwind, MapLibre (OpenFreeMap tiles), Hono on Cloudflare
    ```
 5. In two terminals, run the API and the web app:
    ```bash
-   npm run dev:api   # terminal 1: API + /spot/:id previews on http://localhost:8788
+   npm run dev:api   # terminal 1: API + /spot/:id link previews on http://localhost:8788
    npm run dev       # terminal 2: React app with hot reload on http://localhost:5173
    ```
-6. Open http://localhost:5173. Vite proxies `/api` and `/spot` to port 8788.
+6. Open http://localhost:5173. Vite proxies `/api` to port 8788.
 
-`dev:api` serves the built `dist`, so re-running `npm run build` only matters for `/spot/:id` previews. The React app itself hot-reloads through Vite. Local data lives in `.wrangler/` (delete that folder to start fresh, then run step 3 again).
+Link previews (the `/spot/:id` meta tags) are tested on http://localhost:8788 directly, for example `curl http://localhost:8788/spot/<id>`. `dev:api` serves the built `dist`, so re-running `npm run build` only matters for those previews. The React app itself hot-reloads through Vite. Local data lives in `.wrangler/` (delete that folder to start fresh, then run step 3 again).
 
 ## Try it on your phone (same Wi-Fi)
 
@@ -81,12 +81,12 @@ Run these from the project folder, after `npx wrangler login`.
    ```
 5. Build and deploy:
    ```bash
-   npm run build && npx wrangler pages deploy dist
+   npm run build && npx wrangler pages deploy dist --branch main
    ```
    The D1 and R2 bindings and the `[vars]` come from `wrangler.toml`. The site is now live at `https://dumplings.pages.dev` (the exact name is printed at the end).
 6. Add your domain: Cloudflare dashboard > Workers & Pages > dumplings > Custom domains > Set up a custom domain. Pick a name on your Cloudflare domain (for example `dumplings.yourdomain.com`). DNS and HTTPS are set up for you.
 
-At this point anyone could call the edit API, so do the next section before sharing the link.
+At this point editing does not work yet: every edit API call returns 401 until Cloudflare Access is configured in the next section.
 
 ## Lock down editing with Cloudflare Access
 
@@ -99,8 +99,9 @@ Cloudflare Access (Zero Trust, free plan for up to 50 users) puts an email-code 
    - `dumplings.yourdomain.com/api/admin*`
 4. Add an Allow policy with an Emails include rule listing Ruchi's email and yours.
 5. Under login methods, enable One-time PIN.
-6. Save, then open the application and copy its Application Audience (AUD) tag.
-7. Put the values in `wrangler.toml` under `[vars]`:
+6. Set the application's Session Duration to the maximum (1 month), so Ruchi is rarely signed out mid-edit. If a session does expire while she is filling in a spot, the form shows a "Sign in again" link that opens in a new tab; after signing in there she taps Save again and nothing is lost.
+7. Save, then open the application and copy its Application Audience (AUD) tag.
+8. Put the values in `wrangler.toml` under `[vars]`:
    ```toml
    [vars]
    SEARCH_PROVIDER = "photon"
@@ -108,8 +109,8 @@ Cloudflare Access (Zero Trust, free plan for up to 50 users) puts an email-code 
    ACCESS_TEAM_DOMAIN = "yourteam.cloudflareaccess.com"
    ACCESS_AUD = "the-long-aud-tag"
    ```
-   Then redeploy (`npm run build && npx wrangler pages deploy dist`). The team domain and AUD tag are identifiers, not secrets (the signature check is what protects you). The emails would be committed to the repo, so if the repo is public you may prefer to keep them out of it (see the note below).
-8. The `*.pages.dev` URL serves the same app. Either add `dumplings.pages.dev/admin*` and `dumplings.pages.dev/api/admin*` as extra paths on the same Access application, or accept that editing there is rejected (the API checks the Access token, so it returns 401 without a login, which is safe; you just cannot sign in there).
+   Then redeploy (`npm run build && npx wrangler pages deploy dist --branch main`). The team domain and AUD tag are identifiers, not secrets (the signature check is what protects you). The emails would be committed to the repo, so if the repo is public you may prefer to keep them out of it (see the note below).
+9. The `*.pages.dev` URL serves the same app. Either add `dumplings.pages.dev/admin*` and `dumplings.pages.dev/api/admin*` as extra paths on the same Access application, or accept that editing there is rejected (the API checks the Access token, so it returns 401 without a login, which is safe; you just cannot sign in there).
 
 Note on vars: because this project has a `wrangler.toml`, Cloudflare treats that file as the source of truth for Pages variables and bindings, and the dashboard's Settings > Variables for those are read-only. To keep `EDITOR_EMAILS` out of a public repo, remove that line from `[vars]` and store it as a secret instead (secrets are still managed outside the file):
 ```bash
@@ -120,7 +121,7 @@ Secrets take effect on the next deployment.
 ## Updating later
 
 ```bash
-npm run build && npx wrangler pages deploy dist
+npm run build && npx wrangler pages deploy dist --branch main
 ```
 
 When a new file appears in `migrations/`, apply it before (or right after) deploying:
@@ -138,11 +139,14 @@ npx wrangler d1 migrations apply dumplings --remote
 5. Check the site is hidden from search engines (expect `x-robots-tag: noindex`):
    ```bash
    curl -I https://dumplings.yourdomain.com/
+   curl -I https://dumplings.yourdomain.com/spot/<id>
    ```
+   Use a real spot id (from a shared link). Both responses must include `x-robots-tag: noindex`.
 6. Check writes are blocked when signed out (expect 401, or a redirect to the Access login):
    ```bash
    curl -i -X POST https://dumplings.yourdomain.com/api/admin/spots
    ```
+7. Real-device photo check: on Ruchi's phone, add a "Been there" spot with 2 photos taken with the camera. Then in the Cloudflare dashboard > R2 > `dumplings-photos`, confirm each new object is under 1 MB, and open each one to confirm it is the right way up (not rotated).
 
 ## Changing text, colors, icons, and settings
 
@@ -173,7 +177,7 @@ Place search uses Photon (free, no key) by default. To use Google Places:
 ## Troubleshooting
 
 - `Wrangler requires at least Node.js v22.0.0`: upgrade Node (`nvm install 22 && nvm use 22`).
-- 401 from `/api/admin/...` locally: `.dev.vars` is missing or `dev:api` was started before you created it. Create it and restart `dev:api`.
+- 401 from `/api/admin/...` locally: `.dev.vars` is missing, lacks the empty `ACCESS_TEAM_DOMAIN=` line, or `dev:api` was started before you created it. Create it and restart `dev:api`.
 - 403 from `/api/admin/...`: your email (`DEV_AUTH_EMAIL` locally, or your Access login in production) is not in `EDITOR_EMAILS`.
 - D1 "no such table": run `npm run db:migrate:local` (local) or `npx wrangler d1 migrations apply dumplings --remote` (deployed).
 - `/spot/:id` shows old content or 404 locally: re-run `npm run build`, then restart `dev:api`.

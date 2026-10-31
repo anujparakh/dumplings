@@ -7,7 +7,6 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': 'http://localhost:8788',
-      '/spot': 'http://localhost:8788',
     },
   },
 });
