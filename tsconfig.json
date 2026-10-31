@@ -12,5 +12,5 @@
     "resolveJsonModule": true,
     "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom"]
   },
-  "include": ["src", "tests", "functions", "vite.config.ts", "vitest.web.config.ts"]
+  "include": ["src", "shared", "tests/web", "vite.config.ts", "vitest.web.config.ts"]
 }
