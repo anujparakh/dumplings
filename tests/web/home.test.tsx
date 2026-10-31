@@ -153,7 +153,6 @@ test('tag dropdown filters and writes ?tag= to URL', async () => {
 test('+ button only when signed in', async () => {
   renderHome('/');
   await waitFor(() => expect(mocked.isSignedIn).toHaveBeenCalled());
-  fireEvent.click(screen.getByRole('button', { name: text.menu }));
   expect(await screen.findByRole('link', { name: text.signIn })).toHaveAttribute('href', '/login');
   expect(screen.queryByRole('link', { name: text.addSpot })).not.toBeInTheDocument();
 });
@@ -162,7 +161,6 @@ test('+ button shown when signed in, links to /admin/new', async () => {
   mocked.isSignedIn.mockResolvedValue(true);
   renderHome('/');
   expect(await screen.findByRole('link', { name: text.addSpot })).toHaveAttribute('href', '/admin/new');
-  expect(screen.queryByRole('button', { name: text.menu })).not.toBeInTheDocument();
   expect(screen.queryByRole('link', { name: text.signIn })).not.toBeInTheDocument();
 });
 

@@ -3,8 +3,6 @@ import { settings } from './settings';
 
 export const text = {
   appTitle: "Ruchi's Dumpling Map",
-  menu: 'Menu',
-  menuSymbol: '\u2630',
   signIn: 'Sign in',
   login: {
     title: 'Sign in to edit',

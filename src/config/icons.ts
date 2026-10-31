@@ -5,5 +5,6 @@ export const icons = {
   pinWant: '/icons/pin-want.svg',
   pinPicked: '/icons/pin-been.svg',
   logo: '/icons/dumpling.svg',
+  unlock: '/icons/unlock.svg',
   tags: {} as Record<string, string>,
 };
