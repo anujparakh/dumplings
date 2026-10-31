@@ -2,6 +2,7 @@ import { useMemo, useRef, useState, type ReactNode } from 'react';
 import type { SpotSummary } from '../../shared/types';
 import { text } from '../config/text';
 import { distanceMiles, formatDistance, type LatLng } from '../lib/geo';
+import { EmptyState } from './EmptyState';
 import { SpotCard } from './SpotCard';
 
 interface Props {
@@ -72,7 +73,7 @@ export function SpotDrawer({ spots, userLocation, emptyMessage, action }: Props)
       </button>
       <div className="flex-1 overflow-y-auto px-3 pb-3">
         {rows.length === 0 ? (
-          <p className="py-4 text-center text-sm text-ink-muted">{emptyMessage}</p>
+          emptyMessage && <EmptyState message={emptyMessage} />
         ) : (
           rows.map(({ spot, miles }) => (
             <SpotCard key={spot.id} spot={spot} variant="row" distance={miles === null ? undefined : formatDistance(miles)} />

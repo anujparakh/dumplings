@@ -19,3 +19,8 @@ test('menu button only renders when it has a sign-in item', () => {
   render(<MemoryRouter><Header showSignIn /></MemoryRouter>);
   expect(screen.getByRole('button', { name: text.menu })).toBeInTheDocument();
 });
+
+test('logo and title link back to the main page', () => {
+  render(<MemoryRouter initialEntries={['/spot/abc']}><Header /></MemoryRouter>);
+  expect(screen.getByRole('link', { name: text.appTitle })).toHaveAttribute('href', '/');
+});

@@ -32,19 +32,28 @@ export function FilterBar({ showBeen, showWant, tag, tags, onShowBeen, onShowWan
     <div className="flex flex-wrap gap-1.5">
       <Chip label={text.filters.been} on={showBeen} onToggle={onShowBeen} />
       <Chip label={text.filters.want} on={showWant} onToggle={onShowWant} />
-      <select
-        aria-label={text.filters.tagLabel}
-        value={tag ?? ''}
-        onChange={(e) => onTag(e.target.value || null)}
-        className={`${CHIP} ${tag ? 'bg-primary text-primary-contrast' : 'bg-surface text-ink'}`}
-      >
-        <option value="">{text.filters.allFoods}</option>
-        {options.map((t) => (
-          <option key={t} value={t}>
-            {t}
-          </option>
-        ))}
-      </select>
+      {/* appearance-none drops the browser's own box and arrow so it matches the chips. */}
+      <div className="relative">
+        <select
+          aria-label={text.filters.tagLabel}
+          value={tag ?? ''}
+          onChange={(e) => onTag(e.target.value || null)}
+          className={`${CHIP} appearance-none field-sizing-content pr-7 ${tag ? 'bg-primary text-primary-contrast' : 'bg-surface text-ink'}`}
+        >
+          <option value="">{text.filters.allFoods}</option>
+          {options.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
+        </select>
+        <span
+          aria-hidden="true"
+          className={`pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs ${tag ? 'text-primary-contrast' : 'text-ink-muted'}`}
+        >
+          {text.filters.tagArrow}
+        </span>
+      </div>
     </div>
   );
 }

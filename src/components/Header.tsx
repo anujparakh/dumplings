@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { icons } from '../config/icons';
 import { text } from '../config/text';
 
@@ -11,8 +12,10 @@ export function Header({ showSignIn = false }: Props): JSX.Element {
   const [open, setOpen] = useState(false);
   return (
     <header className="relative flex items-center gap-2 bg-surface px-4 py-3 shadow-sm">
-      <img src={icons.logo} alt="" className="h-7 w-7" />
-      <h1 className="flex-1 text-lg font-bold text-ink">{text.appTitle}</h1>
+      <Link to="/" className="flex flex-1 items-center gap-2">
+        <img src={icons.logo} alt="" className="h-7 w-7" />
+        <h1 className="text-lg font-bold text-ink">{text.appTitle}</h1>
+      </Link>
       {/* The menu only holds the sign-in link, so there is no menu button without it. */}
       {showSignIn && (
         <button

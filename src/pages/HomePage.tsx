@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import type { SpotSummary } from '../../shared/types';
+import { EmptyState } from '../components/EmptyState';
 import { FilterBar } from '../components/FilterBar';
 import { Header } from '../components/Header';
 import { SpotCard } from '../components/SpotCard';
@@ -139,7 +140,7 @@ export function HomePage(): JSX.Element {
         <div className="sticky top-0 z-10 bg-surface-muted">{top}</div>
         <main className="flex flex-col gap-3 px-2.5 pb-24">
           {spots.length === 0 && emptyMessage && (
-            <p className="py-8 text-center text-sm text-ink-muted">{emptyMessage}</p>
+            <EmptyState message={emptyMessage} />
           )}
           {spots.map((s) => (
             <SpotCard key={s.id} spot={s} variant="card" />

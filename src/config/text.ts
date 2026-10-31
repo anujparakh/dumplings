@@ -13,6 +13,7 @@ export const text = {
     been: 'Been there',
     want: 'Want to go',
     allFoods: 'All foods',
+    tagArrow: '\u25BE',
     tagLabel: 'Food type',
   },
   views: {
